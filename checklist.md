@@ -3,7 +3,7 @@
 ## STEP 1: Compiling all projects
 - [V] Download the projects dataset 
 - [V] Choose folder/naming convention
-- [] Create makefile to bulk compile the projects
+- [~] Create makefile to bulk compile the projects
 
 ## STEP 2: Extract inlined snippets
 - [V] Locate inlining in each binary (implement tool to)
