@@ -22,3 +22,14 @@
 - [] Extract basic block
 - [] Extract asm snippets (Same tool)
 
+
+To be discussed:
+- Which blocks to extract for each inlined call in the CFG? Current implementation: from starting position, check if all ranges are covered. Blocks can be discarded or taken into consideration, and ranges are shrunk accordingly
+	- But what's the meaning of the address listed in ranges? Is it relative to base?
+	- Does the DW_AT_entry_pc represent the enter block? If so, why do some low addresses clash with it?
+- How to relate an inlined call site to a non-inlined call site?
+- How to use makefiles. Just, in general.
+- How are names mangled?
+- Non-contiguous mean in different BBs, right?
+- Is the main of the parser actually used?
+- At which point should the patched library be linked? Are optimizations applied after loading libraries?

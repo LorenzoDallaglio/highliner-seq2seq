@@ -329,7 +329,6 @@ class Dwarf(object):
             file_path = join(file_dir, filename)
         return file_path, line
 
-
 if __name__=="__main__":
     #In a real case a double cycle should iterate over all binaries and opt levels
     elfpath = "projects/test/test_O2.o"
