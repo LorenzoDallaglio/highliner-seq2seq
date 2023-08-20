@@ -330,13 +330,15 @@ class Dwarf(object):
         return file_path, line
 
 if __name__=="__main__":
-    #In a real case a double cycle should iterate over all binaries and opt levels
+    #NOTE: In a real case a double cycle should iterate over all binaries and opt levels
     elfpath = "projects/test/test_O2.o"
     dobject = Dwarf(elfpath)
     for mangled_name, ranges in dobject.get_inlined_subroutines_info():
         print(mangled_name)
         rng_string = ""
-        for elem in ranges:
-            rng_string += "{}->{}".format(elem[0], elem[1]) + ", "
+        range_start = ranges[0][0]
+        rng_string += "{}->{}".format(hex(ranges[0][0]), hex(ranges[0][1])) + ", "
+        for elem in ranges[1:]:
+            rng_string += "{}->{}".format(hex(elem[0]+range_start), hex(elem[1]+range_start)) + ", "
         print(rng_string)
     #print(list(dobject.get_inlined_subroutines_mangled_name_by_addr(0x1A7CD))) 
