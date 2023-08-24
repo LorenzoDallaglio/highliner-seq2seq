@@ -8,9 +8,9 @@
 ## STEP 2: Extract inlined snippets
 - [V] Locate inlining in each binary (implement tool to)
 - [V] List methods names to extract
+- []  Filter inlining instances by method name
 - [V] Extract basic blocks and addresses for each instance (implement tool to)
 - [V] Extract asm snippets for each instance (implement tool to)
-- [V] Choose folder/naming convention for snippets
 
 ## STEP 3: Patch binaries
 - [V] Download standard library sourcecode -> already in /usr/include/c++
@@ -24,6 +24,8 @@
 - [] Extract asm snippets (Same tool)
 
 ## STEP 5: generalize to multiple projects
+- [V] Choose folder/naming convention for snippets
+- [V] Create appropriate folders
 
 
 To be discussed:
