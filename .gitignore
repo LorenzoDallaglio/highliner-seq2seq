@@ -1,5 +1,6 @@
 **/*.o
 projects/**
+headers/**
 reminders.txt
 test.txt
 __pycache__/**

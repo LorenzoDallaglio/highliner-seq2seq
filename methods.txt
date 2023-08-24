@@ -1,0 +1,14 @@
+std::map::find
+std::map::lower_bound
+std::map::operator[]
+std::map::upper_bound
+std::deque::clear
+std::deque::erase
+std::deque::push_back
+std::deque::reserve
+std::deque::resize
+std::deque::operator[]
+std::deque::pop_front
+std::deque::push_back
+
+

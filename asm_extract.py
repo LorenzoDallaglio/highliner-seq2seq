@@ -1,4 +1,5 @@
 import angr
+import os
 from dwarf_parser import *
 from pwn import *
 
@@ -91,18 +92,14 @@ def extractBlocks(cfg, entry_node, inlined_info_list):
 
 
 
-def extractAsm(path, elf_path, binname, inlined_instances_list):
-    #NOTE: currently it's only on single optimization
-    snippets_path = path + "/snippets/O2/"
+def extractAsm(snippets_dir, elf_path, inlined_instances_list):
     elf = ELF(elf_path)
     for instance in inlined_instances_list:
         if len(instance.blocks) > 0: #XXX: but why should this ever happen?
-            #NOTE: such a complex naming convention will not be necessary with complete script
-            #   Each snippet's name as well as opt level will be provided its own subfolder
+            # Snippet identifier is name + full range block
             range_ID = str([hex(instance.blocks[0][0]), hex(instance.blocks[-1][1])]) # This is used to uniquely identify each snippet - might have collisions 
             snippet_name = "{}-{}.txt".format(instance.mangled_name, range_ID).replace('\'', '')
-            #XXX Needs to create the folders first with os library - possibly, not here
-            snippet = open(snippets_path + snippet_name, "w")
+            snippet = open(snippets_dir + snippet_name, "w")
             for block in instance.blocks:
                 bytestring = elf.read(block[0] - 0x400000 , block[1]-block[0])
                 code = disasm(bytestring)
@@ -112,28 +109,36 @@ def extractAsm(path, elf_path, binname, inlined_instances_list):
 
 
 if __name__ =="__main__":
-    #NOTE: currently it's only on single binary on single optimization
-    #Future implementation should use a double cycle over all projects, all Os, possibly both C++ and Clang
-    binname = "test"
-    path = "projects/{}".format(binname)
-    opt_level = "O2"
-    elf_path = "projects/{}/{}_{}.o".format(binname, binname, opt_level)
-    proj = angr.Project(elf_path, load_options={'auto_load_libs': False})
-    base_addr = proj.loader.main_object.min_addr
-    #dwarf info is parsed into InlinedInfo objects
-    #NOTE: it is quite ugly to pass around a bunch of paths and objects instead of a single one - should think of universal solution
-    inlined_instances_list = extractInstances(elf_path, base_addr)
+    #Future implementation should possibly cycle over both g++ and Clang
+    optimizations = ["O2", "O3", "Ofast", "Os"]
+    proj_dir = "projects_exp/"
+    for bin_name in os.listdir(proj_dir):
+        print("Parsing project: " + bin_name)
+        proj_path = proj_dir + bin_name
+        for opt_level in optimizations:
+            print("With optimization: " + opt_level)
+            elf_path = proj_path + "/{}_{}.o".format(bin_name, opt_level)
+            snippets_dir = proj_path + "/snippets/{}/".format(opt_level)
+            try:
+                os.mkdir(snippets_dir)
+            except FileExistsError:
+                pass
 
-    #InlinedInfo ranges are used to identify blocks containing the inlined instance instructions
-    cfg = proj.analyses.CFGFast()
-    entry_node = cfg.get_any_node(proj.entry)
-    extractBlocks(cfg, entry_node, inlined_instances_list)
+            angr_proj = angr.Project(elf_path, load_options={'auto_load_libs': False})
+            base_addr = angr_proj.loader.main_object.min_addr
+            #dwarf info is parsed into InlinedInfo objects
+            #NOTE: it is quite ugly to pass around a bunch of paths and objects instead of a single one - should think of universal solution
+            inlined_instances_list = extractInstances(elf_path, base_addr)
 
-    #DEBUG
-    #print("Some leftovers!")
-    #for elem in inlined_instances_list:
-    #    if len(elem.blocks) < 1:
-    #        print(elem)
+            #InlinedInfo ranges are used to identify blocks containing the inlined instance instructions
+            cfg = angr_proj.analyses.CFGFast()
+            entry_node = cfg.get_any_node(angr_proj.entry)
+            extractBlocks(cfg, entry_node, inlined_instances_list)
+            #DEBUG
+            #print("Some leftovers!")
+            #for elem in inlined_instances_list:
+            #    if len(elem.blocks) < 1:
+            #        print(elem)
 
-    #extract asm snippets of identified blocks
-    extractAsm(path, elf_path, binname, inlined_instances_list) 
+            #extract asm snippets of identified blocks
+            extractAsm(snippets_dir, elf_path, inlined_instances_list) 
