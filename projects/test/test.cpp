@@ -1,14 +1,19 @@
 #include <iostream>
 #include <vector>
 
+int simple_inline(int i){
+	int res = 0x69;	
+	return res + i;
+}
+
 int main(){
-	std::cout << "Hello World!\n" << "This is a test program!\n";
 	std::vector<int> vec;
-	for (int i = 0; i < 10; i++){
+	int test = 0;
+	for (int i = test; i < 10; i++){
 		vec.push_back(i);
 	}
-	for (int i = 0; i < 10; i++){
-		std::cout << vec[i] << "\n";
+	for (int i = test; i < 10; i++){
+		std::cout << simple_inline(i) << "\n";
 	}
 	return 0;
 }
