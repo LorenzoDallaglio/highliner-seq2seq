@@ -1,15 +1,17 @@
 #!/bin/bash
 
-PROJECTS_DIR=./projects
+PROJDIRS=$(wildcard projects/*/.)
 
-.PHONY: compileall compile
+.PHONY: all $(PROJDIRS) 
 
-compile:
-	$(MAKE) -C $(PROJECTS_DIR)/test
+all: $(PROJDIRS)
+$(PROJDIRS):
+	$(MAKE) -C $@
 
-#compileall: 
-#	for dir in $(PROJECTS_DIR)/*/ ; do \
-#		dir=${dir%*/} ; \
-#		$(MAKE) -C $(dir) ; \
-#	done
+clean: $(PROJDIRS)
+$(PROJDIRS):
+	-$(MAKE) -C $@ clean
+
+#$(PROJDIRS):
+
 
