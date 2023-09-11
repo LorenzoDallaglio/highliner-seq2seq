@@ -4,7 +4,7 @@ import subprocess
 PROJECTS_DIR = 'projects/'
 BINARIES_DIR = 'binary_dataset/'
 #NOTE: which version of dwarf to use?
-CXXFLAGS = "-std=c++14 -s -lm -lpthread -g"
+CXXFLAGS = "-std=c++14 -s -lm -lpthread -g "
 OPT_LEVELS = ["-O2", "-O3", "-Os", "-Ofast"]
 
 def recursive_ls(path):
@@ -41,7 +41,7 @@ if __name__ == '__main__':
         #Build all projects with the given optimization level
         print("Build for: " + opt_level)
         #make_command = ["make", "CXXFLAGS='-g'", "OPT_FLAGS='{}'".format(opt_level)]
-        make_command = ["make", "CXXFLAGS={}".format(CXXFLAGS), "OPT_FLAGS='{}'".format(opt_level)]
+        make_command = ["make", "CXXFLAGS={}".format(CXXFLAGS + opt_level), "OPT_FLAGS='{}'".format(opt_level)]
         subprocess.run(make_command)
 
         #NOTE: what happens if the process is interrupted?

@@ -6,5 +6,5 @@ PROJDIRS=$(wildcard projects/*/.)
 
 compile: $(PROJDIRS)
 $(PROJDIRS):
-	$(MAKE) -C $@ CXXFLAGS+='$(OPT_FLAGS)' OPT_FLAGS+='$(OPT_FLAGS)'
+	$(MAKE) -C $@ CXXFLAGS='$(CXXFLAGS)' OPT_FLAGS='$(OPT_FLAGS)'
 
