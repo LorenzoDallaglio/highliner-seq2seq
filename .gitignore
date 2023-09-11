@@ -1,7 +1,7 @@
 **/*.o
 projects/**
+binary_dataset/**
 headers/**
 stash/**
-reminders.txt
-test.txt
+*.txt
 __pycache__/**

@@ -2,16 +2,9 @@
 
 PROJDIRS=$(wildcard projects/*/.)
 
-.PHONY: all $(PROJDIRS) 
+.PHONY: compile $(PROJDIRS)
 
-all: $(PROJDIRS)
+compile: $(PROJDIRS)
 $(PROJDIRS):
-	$(MAKE) -C $@
-
-clean: $(PROJDIRS)
-$(PROJDIRS):
-	-$(MAKE) -C $@ clean
-
-#$(PROJDIRS):
-
+	$(MAKE) -C $@ CXXFLAGS+='$(OPT_FLAGS)' OPT_FLAGS+='$(OPT_FLAGS)'
 
