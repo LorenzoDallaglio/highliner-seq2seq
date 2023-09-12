@@ -3,7 +3,8 @@
 ## STEP 1: Compiling all projects
 - [V] Download the projects dataset 
 - [V] Choose folder/naming convention
-- [] Create makefile to bulk compile the projects using each project own makefile
+- [V] Create makefile to bulk compile the projects using each project own makefile
+- [V] Extract and isolate executable binaries
 
 ## STEP 2: Extract inlined snippets
 - [V] Locate inlining in each binary (implement tool to)
@@ -17,8 +18,16 @@
 - [V] Create appropriate folders
 
 - Is the main of the parser actually used?
-- What's the difference between entry\_pc and range starting point? Why do some rangelists start and end withy do some rangelists start and end with the same byte? 
 
 Questions:
 - Existing method/library to demangle names?
-- Possible building solutions for dataset?
+- Why are Dwarf ranges so weird?:
+	- entry\_pc does not correspond with low\_pc
+	- Some ranges start with one byte as starting address, other have simply multiple instances with no starting address
+	- Some ranges are only the starting address
+	- Some ranges include zero-byte intervals
+	- Some ranges are below entry block
+- Possible errors in the dataset:
+	- Output binary has weird extension such as .o -> isn't correctly extracted
+	- Optimization flags of projects are specified in neither OPT\_FLAGS or CXX\_FLAGS, but after both
+- Bino flags wipe out dwarf info?

@@ -4,7 +4,7 @@ import subprocess
 PROJECTS_DIR = 'projects/'
 BINARIES_DIR = 'binary_dataset/'
 #NOTE: which version of dwarf to use?
-CXXFLAGS = "-std=c++14 -s -lm -lpthread -g "
+CXXFLAGS = "-std=c++14 -lm -lpthread -g "
 OPT_LEVELS = ["-O2", "-O3", "-Os", "-Ofast"]
 
 def recursive_ls(path):
@@ -18,9 +18,6 @@ def recursive_ls(path):
     return file_paths
 
 def is_binary(path):
-    #This extension is typical of relocatable files
-    if path[-2:] == ".o":
-        return False
     f = open(path, "rb")
     content = f.read()
     f.close()
@@ -40,7 +37,6 @@ if __name__ == '__main__':
     for opt_level in OPT_LEVELS:
         #Build all projects with the given optimization level
         print("Build for: " + opt_level)
-        #make_command = ["make", "CXXFLAGS='-g'", "OPT_FLAGS='{}'".format(opt_level)]
         make_command = ["make", "CXXFLAGS={}".format(CXXFLAGS + opt_level), "OPT_FLAGS='{}'".format(opt_level)]
         subprocess.run(make_command)
 
@@ -64,7 +60,13 @@ if __name__ == '__main__':
             
             for file_path in proj_file_path:
                 if is_binary(file_path) and not is_library(file_path):
-                    file_name = os.path.basename(file_path)
-                    bin_path = os.path.join(bin_dir, file_name)
-                    os.replace(file_path, bin_path)
+                    #This extension is typical of relocatable files.
+                    #Due to makefile heterogeneity, clean rule is not defined
+                    #Thus, the buidling procedure takes it upon itself to also remove relocatables
+                    if file_path[-2:] == ".o":
+                        os.remove(file_path)
+                    else:
+                        file_name = os.path.basename(file_path)
+                        bin_path = os.path.join(bin_dir, file_name)
+                        os.replace(file_path, bin_path)
 
