@@ -3,9 +3,9 @@
 ###############
 import angr
 import os
-from dwarf_parser import *
+from modules.dwarf_parser import Dwarf
 from pwn import *
-from unmangler import check_name, METHODS
+from modules.unmangler import check_name, METHODS
 
 
 ########################
