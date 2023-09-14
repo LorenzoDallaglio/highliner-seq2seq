@@ -1,11 +1,24 @@
+###############
+### IMPORTS ###
+###############
 import angr
 import os
 from dwarf_parser import *
 from pwn import *
+from unmangler import check_name, METHODS
+
+
+########################
+### GLOBAL VARIABLES ###
+########################
 
 BINARIES_DIR = 'binary_dataset/'
 SNIPPETS_DIR = 'snippet_dataset/'
 OPT_LEVELS = ["-O2"]
+
+###############
+### CLASSES ###
+###############
 
 class inlinedInfo:
     def __init__(self, mangled_name, ranges=[], blocks=[]):
@@ -25,20 +38,27 @@ class inlinedInfo:
 
         return "{}\n{}\n{}".format(name_repr, ranges_repr, block_repr)
 
+
+
+#################
+### FUNCTIONS ###
+#################
+
 def extract_instances(elf_path, base_addr):
     print("EXTRACTING INSTANCES:\n")
     dobject = Dwarf(elf_path)
     inlined_instances_list = []
     for mangled_name, ranges in dobject.get_inlined_subroutines_info():
-        new_instance = inlinedInfo(mangled_name)
+        if check_name(mangled_name, METHODS):
+            new_instance = inlinedInfo(mangled_name)
 
-        range_start = ranges[0][0] + base_addr
-        new_instance.ranges.append([ranges[0][0] + base_addr, ranges[0][1] + base_addr])
-        for elem in ranges[1:]:
-            new_instance.ranges.append([elem[0] + range_start, elem[1] + range_start])
-        inlined_instances_list.append(new_instance) 
-        print(inlined_instances_list)
-
+            range_start = ranges[0][0] + base_addr
+            new_instance.ranges.append([ranges[0][0] + base_addr, ranges[0][1] + base_addr])
+            for elem in ranges[1:]:
+                new_instance.ranges.append([elem[0] + range_start, elem[1] + range_start])
+            inlined_instances_list.append(new_instance) 
+        else:
+            pass
     return inlined_instances_list
 
 
@@ -151,6 +171,7 @@ if __name__ =="__main__":
                 #NOTE: it is quite ugly to pass around a bunch of paths and objects instead of a single one
                 #Angr already keeps an ELF in memory should think of universal solution
                 inlined_instances_list = extract_instances(elf_path, base_addr)
+                print(inlined_instances_list)
 
                 #InlinedInfo ranges are used to identify blocks containing the inlined instance instructions
                 #NOTE: could simply pass the angr_project entirely within here
