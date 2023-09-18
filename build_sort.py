@@ -4,7 +4,7 @@ import subprocess
 PROJECTS_DIR = 'projects/'
 BINARIES_DIR = 'binary_dataset/'
 #NOTE: which version of dwarf to use?
-CXXFLAGS = "-std=c++14 -lm -lpthread -g "
+CXXFLAGS = "-std=c++14 -lm -lpthread -gdwarf-4 -gstrict-dwarf "
 OPT_LEVELS = ["-O2", "-O3", "-Os", "-Ofast"]
 
 def recursive_ls(path):

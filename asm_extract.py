@@ -51,11 +51,8 @@ def extract_instances(elf_path, base_addr):
     for mangled_name, ranges in dobject.get_inlined_subroutines_info():
         if check_name(mangled_name, METHODS):
             new_instance = inlinedInfo(mangled_name)
-
-            range_start = ranges[0][0] + base_addr
-            new_instance.ranges.append([ranges[0][0] + base_addr, ranges[0][1] + base_addr])
-            for elem in ranges[1:]:
-                new_instance.ranges.append([elem[0] + range_start, elem[1] + range_start])
+            for elem in ranges:
+                new_instance.ranges.append([elem[0] + base_addr, elem[1] + base_addr])
             inlined_instances_list.append(new_instance) 
         else:
             pass
@@ -136,7 +133,7 @@ def extract_asm(snippets_dir, elf_path, inlined_instances_list):
             code = ''
             for rang in instance.ranges:
                 #NOTE: there is a problem with single byte ranges
-                bytestring = elf.read(rang[0] - 0x400000 , rang[1]-rang[0]+1)
+                bytestring = elf.read(rang[0] - 0x400000 , rang[1]-rang[0])
                 code += disasm(bytestring) + '\n'
             target_snippet.write(code)
             target_snippet.close()

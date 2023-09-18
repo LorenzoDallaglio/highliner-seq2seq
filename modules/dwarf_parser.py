@@ -295,12 +295,8 @@ class Dwarf(object):
             ranges = die.dwarfinfo.range_lists().get_range_list_at_offset(range_value)
             addresses = []
             for range_i in ranges:
-                try:
-                    low_addr = range_i.begin_offset
-                    high_addr = range_i.end_offset
-                except AttributeError:
-                    low_addr = range_i.base_address
-                    high_addr = range_i.base_address
+                low_addr = range_i.begin_offset
+                high_addr = range_i.end_offset
                 addresses.append([low_addr, high_addr])
             return addresses
         return None
@@ -329,16 +325,10 @@ class Dwarf(object):
             file_path = join(file_dir, filename)
         return file_path, line
 
+
 if __name__=="__main__":
-    #NOTE: In a real case a double cycle should iterate over all binaries and opt levels
-    elfpath = "projects/test/test_O2.o"
-    dobject = Dwarf(elfpath)
+    dobject = Dwarf("0test/test")
     for mangled_name, ranges in dobject.get_inlined_subroutines_info():
         print(mangled_name)
-        rng_string = ""
-        range_start = ranges[0][0]
-        rng_string += "{}->{}".format(hex(ranges[0][0]), hex(ranges[0][1])) + ", "
-        for elem in ranges[1:]:
-            rng_string += "{}->{}".format(hex(elem[0]+range_start), hex(elem[1]+range_start)) + ", "
-        print(rng_string)
+        print(ranges)
     #print(list(dobject.get_inlined_subroutines_mangled_name_by_addr(0x1A7CD))) 
