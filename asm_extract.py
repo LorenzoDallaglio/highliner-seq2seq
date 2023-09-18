@@ -5,7 +5,7 @@ import angr
 import os
 from modules.dwarf_parser import Dwarf
 from pwn import *
-from modules.unmangler import check_name, METHODS
+from modules.name_mangling import demangle
 
 
 ########################
@@ -15,19 +15,33 @@ from modules.unmangler import check_name, METHODS
 BINARIES_DIR = 'binary_dataset/'
 SNIPPETS_DIR = 'snippet_dataset/'
 OPT_LEVELS = ["-O2"]
+METHODS = {
+    "std::deque::operator[]",
+    "std::deque::pop_front",
+    "std::deque::push_back",
+    "std::map::find",
+    "std::map::lower_bound",
+    "std::map::operator[]",
+    "std::map::upper_bound"
+    "std::vector::clear",
+    "std::vector::erase",
+    "std::vector::push_back",
+    "std::vector::reserve",
+    "std::vector::resize"
+}
 
 ###############
 ### CLASSES ###
 ###############
 
 class inlinedInfo:
-    def __init__(self, mangled_name, ranges=[], blocks=[]):
-        self.mangled_name = mangled_name
+    def __init__(self, demangled_name, ranges=[], blocks=[]):
+        self.demangled_name =demangled_name
         self.ranges = ranges.copy()
         self.blocks = blocks.copy()
 
     def __repr__(self):
-        name_repr = "Name: {}".format(self.mangled_name)
+        name_repr = "Name: {}".format(self.demangled_name)
         ranges_repr = "Ranges: "
         for ran in self.ranges:
             ranges_repr += "{} -> {}, ".format(hex(ran[0]), hex(ran[1]))
@@ -49,8 +63,10 @@ def extract_instances(elf_path, base_addr):
     dobject = Dwarf(elf_path)
     inlined_instances_list = []
     for mangled_name, ranges in dobject.get_inlined_subroutines_info():
-        if check_name(mangled_name, METHODS):
-            new_instance = inlinedInfo(mangled_name)
+        namespace, method = demangle(mangled_name)
+        demangled_name = namespace + "::" + method
+        if demangled_name in METHODS:
+            new_instance = inlinedInfo(demangled_name)
             for elem in ranges:
                 new_instance.ranges.append([elem[0] + base_addr, elem[1] + base_addr])
             inlined_instances_list.append(new_instance) 
@@ -97,7 +113,7 @@ def extract_blocks(cfg, entry_node, inlined_info_list):
 
 def build_name(elf_name, inlined_instance):
     elf_id = elf_name
-    method_id = inlined_instance.mangled_name.replace('\'', '')
+    method_id = inlined_instance.demangled_name.replace('\'', '')
     range_id = str([hex(inlined_instance.blocks[0][0]), hex(inlined_instance.blocks[-1][1])])  
     snippet_name = "{}-{}-{}.txt".format(elf_id, method_id, range_id)
     return snippet_name
@@ -169,6 +185,7 @@ if __name__ =="__main__":
                 #Angr already keeps an ELF in memory should think of universal solution
                 inlined_instances_list = extract_instances(elf_path, base_addr)
                 print(inlined_instances_list)
+                continue
 
                 #InlinedInfo ranges are used to identify blocks containing the inlined instance instructions
                 #NOTE: could simply pass the angr_project entirely within here

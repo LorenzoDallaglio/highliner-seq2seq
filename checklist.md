@@ -28,3 +28,9 @@ Questions:
 	- Output binary has weird extension such as .o -> isn't correctly extracted
 	- Optimization flags of projects are specified in neither OPT\_FLAGS or CXX\_FLAGS, but after both
 
+Report:
+- Implemented very rudimental unmangling of names
+	- Not clear if it is correct
+- Tested DWARF4 in place of DWARF5, which solved many DWARF related problems.
+	-> Pyelftools correctly parses DWARF5 nowadays, but produced data structures are slightly different from DWARF4.
+	-> Previously had to slightly adjust BINO's parser, now I'll just use it as is to guarantee correctness
