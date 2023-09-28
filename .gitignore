@@ -4,4 +4,5 @@ binary_dataset/**
 headers/**
 stash/**
 *.txt
-__pycache__/**
+*.json
+modules/__pycache__/**

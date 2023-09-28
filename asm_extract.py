@@ -3,7 +3,9 @@
 ###############
 import angr
 import os
+import traceback
 from modules.dwarf_parser import Dwarf
+from modules.persistence import save_state, load_state
 from pwn import *
 from modules.name_mangling import demangle
 
@@ -14,7 +16,8 @@ from modules.name_mangling import demangle
 
 BINARIES_DIR = 'binary_dataset/'
 SNIPPETS_DIR = 'snippet_dataset/'
-OPT_LEVELS = ["-O2"]
+DEFAULT_OPT = ["-O2"]
+#OPT_LEVELS = ["-O2", "-O3", "-Os", "-Ofast"]
 METHODS = {
     "std::deque::operator[]",
     "std::deque::pop_front",
@@ -148,7 +151,6 @@ def extract_asm(snippets_dir, elf_path, inlined_instances_list):
             target_snippet = open(os.path.join(target_dir, snippet_name), "w")
             code = ''
             for rang in instance.ranges:
-                #NOTE: there is a problem with single byte ranges
                 bytestring = elf.read(rang[0] - 0x400000 , rang[1]-rang[0])
                 code += disasm(bytestring) + '\n'
             target_snippet.write(code)
@@ -159,45 +161,63 @@ def extract_asm(snippets_dir, elf_path, inlined_instances_list):
 if __name__ =="__main__":
     context.arch = "amd64"
     #Future implementation should possibly cycle over both g++ and Clang
-    for proj_name in os.listdir(BINARIES_DIR):
+    
+    proj_list, opt_levels = load_state() 
+    if len(proj_list) == 0:
+        proj_list = os.listdir(BINARIES_DIR)
+    if len(opt_levels) == 0:
+        opt_levels = DEFAULT_OPT
+
+    for proj_name in proj_list:
         print("Parsing project: " + proj_name)
         proj_dir = BINARIES_DIR + proj_name
         proj_snip_dir = SNIPPETS_DIR + proj_name
         if not os.path.exists(proj_snip_dir): 
             os.mkdir(proj_snip_dir)
 
-        for opt_level in OPT_LEVELS:
-            print("With optimization: " + opt_level)
-            bin_dir = os.path.join(proj_dir, opt_level)
-            snip_dir = os.path.join(proj_snip_dir, opt_level)
- 
-            if not os.path.exists(snip_dir): 
-                os.mkdir(snip_dir)
+        for opt_level in opt_levels:
+            try:
+                print("With optimization: " + opt_level)
+                bin_dir = os.path.join(proj_dir, opt_level)
+                snip_dir = os.path.join(proj_snip_dir, opt_level)
+     
+                if not os.path.exists(snip_dir): 
+                    os.mkdir(snip_dir)
 
-            for bin_name in os.listdir(bin_dir):
-                elf_path = os.path.join(bin_dir, bin_name)
-                print("FOR BINARY AT: " + elf_path)
+                for bin_name in os.listdir(bin_dir):
+                    elf_path = os.path.join(bin_dir, bin_name)
+                    print("FOR BINARY AT: " + elf_path)
 
-                angr_proj = angr.Project(elf_path, load_options={'auto_load_libs': False})
-                base_addr = angr_proj.loader.main_object.min_addr
-                #dwarf info is parsed into InlinedInfo objects
-                #NOTE: it is quite ugly to pass around a bunch of paths and objects instead of a single one
-                #Angr already keeps an ELF in memory should think of universal solution
-                inlined_instances_list = extract_instances(elf_path, base_addr)
-                print(inlined_instances_list)
-                continue
+                    angr_proj = angr.Project(elf_path, load_options={'auto_load_libs': False})
+                    base_addr = angr_proj.loader.main_object.min_addr
+                    #dwarf info is parsed into InlinedInfo objects
+                    #NOTE: it is quite ugly to pass around a bunch of paths and objects instead of a single one
+                    #Angr already keeps an ELF in memory should think of universal solution
+                    inlined_instances_list = extract_instances(elf_path, base_addr)
+                    print(inlined_instances_list)
+                    continue
 
-                #InlinedInfo ranges are used to identify blocks containing the inlined instance instructions
-                #NOTE: could simply pass the angr_project entirely within here
-                cfg = angr_proj.analyses.CFGFast()
-                entry_node = cfg.get_any_node(angr_proj.entry)
-                extract_blocks(cfg, entry_node, inlined_instances_list)
+                    #InlinedInfo ranges are used to identify blocks containing the inlined instance instructions
+                    #NOTE: could simply pass the angr_project entirely within here
+                    cfg = angr_proj.analyses.CFGFast()
+                    entry_node = cfg.get_any_node(angr_proj.entry)
+                    extract_blocks(cfg, entry_node, inlined_instances_list)
 
-                #DEBUG
-                #print("Some leftovers!")
-                #for elem in inlined_instances_list:
-                #    if len(elem.blocks) < 1:
-                #        print(elem)
+                    #extract asm snippets of identified blocks
+                    extract_asm(snip_dir, elf_path, inlined_instances_list) 
+            except KeyboardInterrupt:
+                print(proj_name + " - " + opt_level)
+                traceback.print_exc()
+                leftover_proj = proj_list[proj_list.index(proj_name):]
+                leftover_opt = opt_levels[opt_levels.index(opt_level)+1:]
+                save_state(leftover_proj, leftover_opt)
+                exit()
+            except:
+                print(proj_name + " - " + opt_level)
+                traceback.print_exc()
+                leftover_proj = proj_list[proj_list.index(proj_name):]
+                leftover_opt = opt_levels[opt_levels.index(opt_level)+1:]
+                save_state(leftover_proj, leftover_opt)
 
-                #extract asm snippets of identified blocks
-                extract_asm(snip_dir, elf_path, inlined_instances_list) 
+        opt_levels = DEFAULT_OPT
+
