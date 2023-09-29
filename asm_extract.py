@@ -1,6 +1,7 @@
 ###############
 ### IMPORTS ###
 ###############
+import pdb
 import angr
 import os
 import traceback
@@ -39,7 +40,7 @@ METHODS = {
 
 class inlinedInfo:
     def __init__(self, demangled_name, ranges=[], blocks=[]):
-        self.demangled_name =demangled_name
+        self.demangled_name = demangled_name
         self.ranges = ranges.copy()
         self.blocks = blocks.copy()
 
@@ -61,8 +62,7 @@ class inlinedInfo:
 ### FUNCTIONS ###
 #################
 
-def extract_instances(elf_path, base_addr):
-    print("EXTRACTING INSTANCES:\n")
+def get_inlined_instances(elf_path):
     dobject = Dwarf(elf_path)
     inlined_instances_list = []
     for mangled_name, ranges in dobject.get_inlined_subroutines_info():
@@ -71,50 +71,46 @@ def extract_instances(elf_path, base_addr):
         if demangled_name in METHODS:
             new_instance = inlinedInfo(demangled_name)
             for elem in ranges:
-                new_instance.ranges.append([elem[0] + base_addr, elem[1] + base_addr])
+                new_instance.ranges.append([elem[0], elem[1]])
             inlined_instances_list.append(new_instance) 
         else:
             pass
     return inlined_instances_list
 
 
+
 # Navigates the cfg starting from the entry node in a tree search
 # For each block, it checks all instances and their ranges
 # In case of overlap, it adds the block to the instance list
-#NOTE: currently, there's a bug of some sort due to which some blocks aren't parsed. 
-def extract_blocks(cfg, entry_node, inlined_info_list):
-    print("EXTRACTING BLOCKS:\n")
-    visited_blocks = set() # Sets allow for O(1) lookup
-    blocks_queue = [entry_node]
+def find_blocks(elf_path, inlined_info_list):
+    angr_proj = angr.Project(elf_path, load_options={'auto_load_libs': False})
+    base_addr = angr_proj.loader.main_object.min_addr
+    cfg = angr_proj.analyses.CFGFast()
+    entry_node = cfg.get_any_node(angr_proj.entry)
 
-    # NOTE: search currently O(N*R) - better complexity might be crucial
-    # Iterate over all blocks:
+    blocks_queue = [entry_node]
+    visited_blocks = set(blocks_queue) # Sets allow for O(1) lookup
+
+    #Navigate CFG through a graph search
     while len(blocks_queue) > 0:
         block = blocks_queue.pop(0)
-        block_start = block.addr
+        block_start = block.addr - base_addr
         block_end = block_start + block.size
-        print("Block {} goes from {} to {}".format(block.name, hex(block_start), hex(block_end)))
 
-        # Iterate over all instances and over all of each instances range
         for instance in inlined_info_list:
             for rang in instance.ranges:
-                # If there is any overlapping between any range and the block, append the latter
                 if (block_start < rang[1] and block_end > rang[0]):
                     instance.blocks.append([block_start, block_end])
                     break
 
-        # Update the queue and the visited set for proper
-        visited_blocks.add(block)
-        print("Successors:")
         for succ in block.successors:
-            # Avoid cycles in graph - alternative implementation would be to remove all edges
-            print("{} ({}), ".format(succ.name, hex(succ.addr)))
             if succ not in visited_blocks:
+                visited_blocks.add(succ)
                 blocks_queue.append(succ)
 
 
-
-def build_name(elf_name, inlined_instance):
+#Name used as ID is name of the binary + name of the method + covered range
+def compose_name(elf_name, inlined_instance):
     elf_id = elf_name
     method_id = inlined_instance.demangled_name.replace('\'', '')
     range_id = str([hex(inlined_instance.blocks[0][0]), hex(inlined_instance.blocks[-1][1])])  
@@ -123,38 +119,64 @@ def build_name(elf_name, inlined_instance):
 
 
 
+def compose_snippet(elf, range_list):
+    code = ''
+    for rang in range_list:
+        bytestring = elf.read(rang[0], rang[1]-rang[0])
+        code += disasm(bytestring) + '\n'
+    return code
+
+
+
 def extract_asm(snippets_dir, elf_path, inlined_instances_list):
-    print("WRITING SNIPPETS")
     elf = ELF(elf_path)
     elf_name = os.path.basename(elf_path)
     input_dir = os.path.join(snip_dir, "input")
-    target_dir = os.path.join(snip_dir, "target")
-    print("INPUT:" + input_dir + "\nTARGET:" + target_dir)
     if not os.path.exists(input_dir): 
         os.mkdir(input_dir)
+    target_dir = os.path.join(snip_dir, "target")
     if not os.path.exists(target_dir): 
         os.mkdir(target_dir)
+    print("INPUT:" + input_dir + "\nTARGET:" + target_dir)
 
     for instance in inlined_instances_list:
-        if len(instance.blocks) > 0: #XXX: but why should this ever happen?
-            # Snippet identifier is elf_name + mangled_name + full range block
-            snippet_name = build_name(elf_name, instance)
+        if len(instance.blocks) > 0:
+            snippet_name = compose_name(elf_name, instance)
+            input_snippet = compose_snippet(elf, instance.blocks)
+            target_snippet = compose_snippet(elf, instance.blocks)
+            #XXX
+            if len(input_snippet) >= len(target_snippet):
+                with open(os.path.join(input_dir, snippet_name), "w") as input_file:
+                    input_file.write(input_snippet)
+                with open(os.path.join(target_dir, snippet_name), "w") as target_file:
+                    target_file.write(target_snippet)
 
-            input_snippet = open(os.path.join(input_dir, snippet_name), "w")
-            code = ''
-            for block in instance.blocks:
-                bytestring = elf.read(block[0] - 0x400000 , block[1]-block[0])
-                code += disasm(bytestring) + '\n'
-            input_snippet.write(code)
-            input_snippet.close()
 
-            target_snippet = open(os.path.join(target_dir, snippet_name), "w")
-            code = ''
-            for rang in instance.ranges:
-                bytestring = elf.read(rang[0] - 0x400000 , rang[1]-rang[0])
-                code += disasm(bytestring) + '\n'
-            target_snippet.write(code)
-            target_snippet.close()
+
+def extract_snippets(elf_path, snip_dir):
+    # 1) DWARF info is parsed into InlinedInfo objects
+    print("Parsing DWARF to get instances:\n")
+    inlined_instances_list = get_inlined_instances(elf_path)
+
+    # 2) InlinedInfo ranges are used to identify blocks containing the inlined instance instructions
+    print("Navigating CFG to identify relevant blocks:\n")
+    find_blocks(elf_path, inlined_instances_list)
+    print (inlined_instances_list)
+
+    # 3) Asm snippets of identified blocks and ranges are extracted to files
+    print("WRITING SNIPPETS")
+    extract_asm(snip_dir, elf_path, inlined_instances_list) 
+
+
+
+def handle_exception(proj_name, opt_level, proj_list, opt_levels, problem_binary=''):
+    print(proj_name + " - " + opt_level)
+    if problem_binary:
+        print("Problematic binary is " + problem_binary)
+    traceback.print_exc()
+    leftover_proj = proj_list[proj_list.index(proj_name):]
+    leftover_opt = opt_levels[opt_levels.index(opt_level)+1:]
+    save_state(leftover_proj, leftover_opt)
 
 
 
@@ -176,48 +198,21 @@ if __name__ =="__main__":
             os.mkdir(proj_snip_dir)
 
         for opt_level in opt_levels:
-            try:
                 print("With optimization: " + opt_level)
                 bin_dir = os.path.join(proj_dir, opt_level)
                 snip_dir = os.path.join(proj_snip_dir, opt_level)
-     
                 if not os.path.exists(snip_dir): 
                     os.mkdir(snip_dir)
 
                 for bin_name in os.listdir(bin_dir):
-                    elf_path = os.path.join(bin_dir, bin_name)
-                    print("FOR BINARY AT: " + elf_path)
-
-                    angr_proj = angr.Project(elf_path, load_options={'auto_load_libs': False})
-                    base_addr = angr_proj.loader.main_object.min_addr
-                    #dwarf info is parsed into InlinedInfo objects
-                    #NOTE: it is quite ugly to pass around a bunch of paths and objects instead of a single one
-                    #Angr already keeps an ELF in memory should think of universal solution
-                    inlined_instances_list = extract_instances(elf_path, base_addr)
-                    print(inlined_instances_list)
-                    continue
-
-                    #InlinedInfo ranges are used to identify blocks containing the inlined instance instructions
-                    #NOTE: could simply pass the angr_project entirely within here
-                    cfg = angr_proj.analyses.CFGFast()
-                    entry_node = cfg.get_any_node(angr_proj.entry)
-                    extract_blocks(cfg, entry_node, inlined_instances_list)
-
-                    #extract asm snippets of identified blocks
-                    extract_asm(snip_dir, elf_path, inlined_instances_list) 
-            except KeyboardInterrupt:
-                print(proj_name + " - " + opt_level)
-                traceback.print_exc()
-                leftover_proj = proj_list[proj_list.index(proj_name):]
-                leftover_opt = opt_levels[opt_levels.index(opt_level)+1:]
-                save_state(leftover_proj, leftover_opt)
-                exit()
-            except:
-                print(proj_name + " - " + opt_level)
-                traceback.print_exc()
-                leftover_proj = proj_list[proj_list.index(proj_name):]
-                leftover_opt = opt_levels[opt_levels.index(opt_level)+1:]
-                save_state(leftover_proj, leftover_opt)
-
+                        try:
+                            elf_path = os.path.join(bin_dir, bin_name)
+                            print("FOR BINARY AT: " + elf_path)
+                            extract_snippets(elf_path, snip_dir)
+                        except KeyboardInterrupt:
+                            handle_exception(proj_name, opt_level, proj_list, opt_levels)
+                            exit()
+                        except:
+                            handle_exception(proj_name, opt_level, proj_list, opt_levels, bin_name)
         opt_levels = DEFAULT_OPT
 

@@ -3,7 +3,6 @@ import subprocess
 
 PROJECTS_DIR = 'projects/'
 BINARIES_DIR = 'binary_dataset/'
-#NOTE: which version of dwarf to use?
 CXXFLAGS = "-std=c++14 -lm -lpthread -gdwarf-4 -gstrict-dwarf "
 OPT_LEVELS = ["-O2", "-O3", "-Os", "-Ofast"]
 
@@ -33,23 +32,18 @@ def is_library(path):
     return False
 
 if __name__ == '__main__':
-    #For each optimization level
     for opt_level in OPT_LEVELS:
-        #Build all projects with the given optimization level
         print("Build for: " + opt_level)
         make_command = ["make", "CXXFLAGS={}".format(CXXFLAGS + opt_level), "OPT_FLAGS='{}'".format(opt_level)]
         subprocess.run(make_command)
 
-        #NOTE: what happens if the process is interrupted?
-        #Create binary directory if non-existent
+        #NOTE: what happens if the process is interrupted? -> start over
         if not os.path.exists(BINARIES_DIR): 
             os.mkdir(BINARIES_DIR)
 
-        #For each project
         for proj_dir in os.listdir(PROJECTS_DIR):
             proj_path = os.path.join(PROJECTS_DIR, proj_dir)
-            #List all related files
-            proj_file_path = recursive_ls(proj_path)
+            proj_file_paths = recursive_ls(proj_path)
 
             bin_dir = os.path.join(BINARIES_DIR, proj_dir)
             if not os.path.exists(bin_dir):
@@ -58,7 +52,7 @@ if __name__ == '__main__':
             if not os.path.exists(bin_dir):
                 os.mkdir(bin_dir)
             
-            for file_path in proj_file_path:
+            for file_path in proj_file_paths:
                 if is_binary(file_path) and not is_library(file_path):
                     #This extension is typical of relocatable files.
                     #Due to makefile heterogeneity, clean rule is not defined
