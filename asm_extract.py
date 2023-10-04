@@ -54,7 +54,7 @@ class inlinedInfo:
         for block in self.blocks:
             block_repr += "{} -> {}, ".format(hex(block[0]), hex(block[1]))
 
-        return "{}\n{}\n{}".format(name_repr, ranges_repr, block_repr)
+        return "{}\n{}\n{}\n".format(name_repr, ranges_repr, block_repr)
 
 
 
@@ -143,7 +143,7 @@ def extract_asm(snippets_dir, elf_path, inlined_instances_list):
         if len(instance.blocks) > 0:
             snippet_name = compose_name(elf_name, instance)
             input_snippet = compose_snippet(elf, instance.blocks)
-            target_snippet = compose_snippet(elf, instance.blocks)
+            target_snippet = compose_snippet(elf, instance.ranges)
             #XXX
             if len(input_snippet) >= len(target_snippet):
                 with open(os.path.join(input_dir, snippet_name), "w") as input_file:
