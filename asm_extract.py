@@ -79,34 +79,51 @@ def get_inlined_instances(elf_path):
 
 
 
-# Navigates the cfg starting from the entry node in a tree search
-# For each block, it checks all instances and their ranges
-# In case of overlap, it adds the block to the instance list
+def get_angr_function_list(cfg):
+    angr_functions = []
+    for angr_function in cfg.kb.functions.values():
+        # If the function is a plt function we don't care
+        if angr_function.is_plt:
+            continue
+        # No blocks? Don't care  
+        if angr_function.size == 0:
+            continue
+        angr_functions.append(angr_function)
+    return sorted(angr_functions, key = lambda fun: fun.addr)
+
+
+
+def find_context_function(instance_starting_addr, candidate_function_list, base_addr):
+    for candidate in reversed(candidate_function_list):
+        for block in candidate.blocks:
+            block_start = block.addr - base_addr
+            block_end = block_start + block.size
+            if (block_start <= instance_starting_addr and instance_starting_addr < block_end):
+                return candidate
+
+
+
 def find_blocks(elf_path, inlined_info_list):
     angr_proj = angr.Project(elf_path, load_options={'auto_load_libs': False})
     base_addr = angr_proj.loader.main_object.min_addr
-    cfg = angr_proj.analyses.CFGFast()
-    entry_node = cfg.get_any_node(angr_proj.entry)
+    cfg = angr_proj.analyses.CFGFast(normalize=True)
+    fun_manager = cfg.kb.functions
+    function_list = get_angr_function_list(cfg)
 
-    blocks_queue = [entry_node]
-    visited_blocks = set(blocks_queue) # Sets allow for O(1) lookup
+    for instance in inlined_info_list:
+        starting_addr = instance.ranges[0][0] #DWARF ranges are sorted in increasing order - tested
+        ceiling_fun = fun_manager.ceiling_func(starting_addr + base_addr)
+        ceiling_index = function_list.index(ceiling_fun)
+        context_fun = find_context_function(starting_addr, function_list[:ceiling_index], base_addr)
 
-    #Navigate CFG through a graph search
-    while len(blocks_queue) > 0:
-        block = blocks_queue.pop(0)
-        block_start = block.addr - base_addr
-        block_end = block_start + block.size
-
-        for instance in inlined_info_list:
+        for block in context_fun.blocks:
             for rang in instance.ranges:
+                block_start = block.addr - base_addr
+                block_end = block_start + block.size
                 if (block_start < rang[1] and block_end > rang[0]):
                     instance.blocks.append([block_start, block_end])
                     break
 
-        for succ in block.successors:
-            if succ not in visited_blocks:
-                visited_blocks.add(succ)
-                blocks_queue.append(succ)
 
 
 #Name used as ID is name of the binary + name of the method + covered range
