@@ -17,8 +17,7 @@ from modules.name_mangling import demangle
 
 BINARIES_DIR = 'binary_dataset/'
 SNIPPETS_DIR = 'snippet_dataset/'
-DEFAULT_OPT = ["-O2"]
-#OPT_LEVELS = ["-O2", "-O3", "-Os", "-Ofast"]
+DEFAULT_OPT = ["-O2", "-O3", "-Os", "-Ofast"]
 METHODS = {
     "std::deque::operator[]",
     "std::deque::pop_front",
@@ -87,6 +86,8 @@ def get_angr_function_list(cfg):
             continue
         # No blocks? Don't care  
         if angr_function.size == 0:
+            continue
+        if angr_function.name[:4] == "sub_" and angr_function.size < 2:
             continue
         angr_functions.append(angr_function)
     return sorted(angr_functions, key = lambda fun: fun.addr)
@@ -181,7 +182,7 @@ def extract_snippets(elf_path, snip_dir):
     print (inlined_instances_list)
 
     # 3) Asm snippets of identified blocks and ranges are extracted to files
-    print("WRITING SNIPPETS")
+    print("Writing appropriate snippets")
     extract_asm(snip_dir, elf_path, inlined_instances_list) 
 
 
@@ -203,7 +204,7 @@ if __name__ =="__main__":
     
     proj_list, opt_levels = load_state() 
     if len(proj_list) == 0:
-        proj_list = os.listdir(BINARIES_DIR)
+        proj_list = sorted(os.listdir(BINARIES_DIR))
     if len(opt_levels) == 0:
         opt_levels = DEFAULT_OPT
 
