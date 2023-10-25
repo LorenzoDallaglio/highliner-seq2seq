@@ -9,29 +9,7 @@ from modules.dwarf_parser import Dwarf
 from modules.persistence import save_state, load_state
 from pwn import *
 from modules.name_mangling import demangle
-
-
-########################
-### GLOBAL VARIABLES ###
-########################
-
-BINARIES_DIR = 'binary_dataset/'
-SNIPPETS_DIR = 'snippet_dataset/'
-DEFAULT_OPT = ["-O2", "-O3", "-Os", "-Ofast"]
-METHODS = {
-    "std::deque::operator[]",
-    "std::deque::pop_front",
-    "std::deque::push_back",
-    "std::map::find",
-    "std::map::lower_bound",
-    "std::map::operator[]",
-    "std::map::upper_bound"
-    "std::vector::clear",
-    "std::vector::erase",
-    "std::vector::push_back",
-    "std::vector::reserve",
-    "std::vector::resize"
-}
+from modules.config import BINARIES_DIR, SNIPPETS_DIR, OPT_LEVELS, METHODS
 
 ###############
 ### CLASSES ###
@@ -206,7 +184,7 @@ if __name__ =="__main__":
     if len(proj_list) == 0:
         proj_list = sorted(os.listdir(BINARIES_DIR))
     if len(opt_levels) == 0:
-        opt_levels = DEFAULT_OPT
+        opt_levels = OPT_LEVELS
 
     for proj_name in proj_list:
         print("Parsing project: " + proj_name)
@@ -232,5 +210,5 @@ if __name__ =="__main__":
                             exit()
                         except:
                             handle_exception(proj_name, opt_level, proj_list, opt_levels, bin_name)
-        opt_levels = DEFAULT_OPT
+        opt_levels = OPT_LEVELS
 

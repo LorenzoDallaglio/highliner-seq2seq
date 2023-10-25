@@ -1,13 +1,14 @@
 import os
-BIN_DIR = "binary_dataset"
+from modules.config import BINARIES_DIR
+BINARIES_DIR = "binary_dataset"
 
 if __name__ == "__main__":
     count = 0
-    bin_list = sorted(os.listdir(BIN_DIR))
+    bin_list = sorted(os.listdir(BINARIES_DIR))
     to_be_removed = []
     print:("The following projects failed compilation")
     for elem in bin_list:
-        path = os.path.join(BIN_DIR, elem, "-O2")
+        path = os.path.join(BINARIES_DIR, elem, "-O2")
         if not os.listdir(path):
             count += 1
             print("{}) Project #{}: {}".format(count, bin_list.index(elem), elem))

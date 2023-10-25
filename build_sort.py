@@ -1,10 +1,8 @@
 import os
 import subprocess
+from modules.config import PROJECTS_DIR, BINARIES_DIR, OPT_LEVELS
 
-PROJECTS_DIR = 'projects/'
-BINARIES_DIR = 'binary_dataset/'
 CXXFLAGS = "-std=c++14 -lm -lpthread -gdwarf-4 -gstrict-dwarf "
-OPT_LEVELS = ["-O2", "-O3", "-Os", "-Ofast"]
 
 def recursive_ls(path):
     file_paths = list()
