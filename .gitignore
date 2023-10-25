@@ -1,8 +1,13 @@
-**/*.o
 projects/**
 binary_dataset/**
-headers/**
-stash/**
+snippet_dataset/**
+
 *.txt
 *.json
+*.pickle
+
 modules/__pycache__/**
+__*
+
+.* 
+!/.gitignore
