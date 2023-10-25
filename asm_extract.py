@@ -70,6 +70,8 @@ def get_inlined_instances(elf_path):
         if demangled_name in METHODS:
             new_instance = inlinedInfo(demangled_name)
             for elem in ranges:
+                if elem[1] == elem[0]:
+                    continue
                 new_instance.ranges.append([elem[0], elem[1]])
             inlined_instances_list.append(new_instance) 
         else:
@@ -86,8 +88,6 @@ def get_angr_function_list(cfg):
             continue
         # No blocks? Don't care  
         if angr_function.size == 0:
-            continue
-        if angr_function.name[:4] == "sub_" and angr_function.size < 2:
             continue
         angr_functions.append(angr_function)
     return sorted(angr_functions, key = lambda fun: fun.addr)
