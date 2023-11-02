@@ -11,7 +11,7 @@ METHODS = {
     "std::map::find",
     "std::map::lower_bound",
     "std::map::operator[]",
-    "std::map::upper_bound"
+    "std::map::upper_bound",
     "std::vector::clear",
     "std::vector::erase",
     "std::vector::push_back",
