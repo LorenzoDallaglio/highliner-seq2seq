@@ -6,11 +6,11 @@ from modules.config import OPT_LEVELS, SNIPPETS_DIR, METHODS
 from modules.tokenizer import tokenize
 
 class snippet:
-    def __init__ (self, name, opt, train, test):
+    def __init__ (self, name, opt, input_seq, target_seq):
         self.name = name
         self.opt = opt
-        self.train = train[:]
-        self.test = test[:]
+        self.input_seq = input_seq[:]
+        self.target_seq = target_seq[:]
 
 def parse_files():
     snippet_list = []
@@ -21,10 +21,10 @@ def parse_files():
             try:
                 for snippet_name in listdir(input_dir):
                     with open(join(input_dir, snippet_name), "r") as input_file:
-                        train_asm = tokenize(input_file.readlines())
+                        input_seq = tokenize(input_file.readlines())
                     with open(join(target_dir, snippet_name), "r") as target_file:
-                        test_asm = tokenize(target_file.readlines())
-                    snippet_list.append(snippet(snippet_name, opt, train_asm, test_asm))
+                        target_seq = tokenize(target_file.readlines())
+                    snippet_list.append(snippet(snippet_name, opt, input_seq, target_seq))
             except FileNotFoundError:
                 pass
     return snippet_list
