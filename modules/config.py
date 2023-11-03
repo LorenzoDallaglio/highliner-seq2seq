@@ -1,8 +1,8 @@
 """ Here are kept shared global variables! """
 
 PROJECTS_DIR = 'data/projects/'
-BINARIES_DIR = 'data/binary_dataset/'
-SNIPPETS_DIR = 'data/snippet_dataset/'
+BINARIES_DIR = 'data/binaries/'
+SNIPPETS_DIR = 'data/snippets/'
 OPT_LEVELS = ["-O2", "-O3", "-Os", "-Ofast"]
 METHODS = {
     "std::deque::operator[]",
