@@ -1,6 +1,5 @@
 import os
 from modules.config import BINARIES_DIR
-BINARIES_DIR = "binary_dataset"
 
 if __name__ == "__main__":
     count = 0

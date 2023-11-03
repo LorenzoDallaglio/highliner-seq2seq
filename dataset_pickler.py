@@ -31,7 +31,7 @@ def parse_files():
 
 if __name__ == "__main__":
     snippet_list = parse_files()
-    with open("pickled_data.pickle", "wb") as pickle_file:
+    with open("data/pickled_data.pickle", "wb") as pickle_file:
         dump(snippet_list, pickle_file)
         
 
