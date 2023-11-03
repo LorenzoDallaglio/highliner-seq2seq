@@ -29,7 +29,7 @@ class inlinedInfo:
 
         block_repr = "Blocks: "
         for block in self.blocks:
-            block_repr += "{} -> {}, ".format(hex(block[0]), hex(block[1]))
+            block_repr += "{} -> {}, ".format(hex(block.addr), hex(block.addr + block.size))
 
         return "{}\n{}\n{}\n".format(name_repr, ranges_repr, block_repr)
 
@@ -94,13 +94,14 @@ def find_blocks(elf_path, inlined_info_list):
         ceiling_fun = fun_manager.ceiling_func(starting_addr + base_addr)
         ceiling_index = function_list.index(ceiling_fun)
         context_fun = find_context_function(starting_addr, function_list[:ceiling_index], base_addr)
-
-        for block in context_fun.blocks:
+            
+        block_list = sorted(context_fun.blocks, key = lambda block: block.addr)
+        for block in block_list:
             for rang in instance.ranges:
                 block_start = block.addr - base_addr
                 block_end = block_start + block.size
                 if (block_start < rang[1] and block_end > rang[0]):
-                    instance.blocks.append([block_start, block_end])
+                    instance.blocks.append(block)
                     break
 
 
@@ -109,44 +110,40 @@ def find_blocks(elf_path, inlined_info_list):
 def compose_name(elf_name, inlined_instance):
     elf_id = elf_name
     method_id = inlined_instance.demangled_name.replace('\'', '')
-    range_id = str([hex(inlined_instance.blocks[0][0]), hex(inlined_instance.blocks[-1][1])])  
+    start = inlined_instance.blocks[0].addr
+    end = inlined_instance.blocks[-1].addr + inlined_instance.blocks[-1].size
+    range_id = str([hex(start), hex(end)])  
     snippet_name = "{}-{}-{}.txt".format(elf_id, method_id, range_id)
     return snippet_name
 
 
 
-def compose_snippet(elf, range_list):
+#Note: suboptimal, should do the operation when checking if a block belongs or not to an instance
+def compose_snippet(instance, base_addr):
     code = ''
-    for rang in range_list:
-        bytestring = elf.read(rang[0], rang[1]-rang[0])
-        code += disasm(bytestring) + '\n'
+    for block in instance.blocks:
+        for inst in block.disassembly.insns:
+            code += "{}: {} {}".format(hex(inst.address), inst.mnemonic, inst.op_str)
+            for rang in instance.ranges:
+                unbased_addr = inst.address - 0x400000
+                if unbased_addr >= rang[0] and unbased_addr < rang[1]:
+                    code += " [INL]"
+                    break
+            code += "\n"
     return code
 
 
 
 def extract_asm(snippets_dir, elf_path, inlined_instances_list):
-    elf = ELF(elf_path)
     elf_name = os.path.basename(elf_path)
-    input_dir = os.path.join(snip_dir, "input")
-    if not os.path.exists(input_dir): 
-        os.mkdir(input_dir)
-    target_dir = os.path.join(snip_dir, "target")
-    if not os.path.exists(target_dir): 
-        os.mkdir(target_dir)
-    print("INPUT:" + input_dir + "\nTARGET:" + target_dir)
-
     for instance in inlined_instances_list:
         if len(instance.blocks) > 0:
             snippet_name = compose_name(elf_name, instance)
-            input_snippet = compose_snippet(elf, instance.blocks)
-            target_snippet = compose_snippet(elf, instance.ranges)
-            #XXX
-            if len(input_snippet) >= len(target_snippet):
-                with open(os.path.join(input_dir, snippet_name), "w") as input_file:
-                    input_file.write(input_snippet)
-                with open(os.path.join(target_dir, snippet_name), "w") as target_file:
-                    target_file.write(target_snippet)
-
+            snippet = compose_snippet(instance)
+            with open(os.path.join(snippets_dir, snippet_name), "w") as input_file:
+                input_file.write(str(instance))
+                input_file.write("="*50 + '\n')
+                input_file.write(snippet)
 
 
 def extract_snippets(elf_path, snip_dir):
@@ -208,7 +205,7 @@ if __name__ =="__main__":
                         except KeyboardInterrupt:
                             handle_exception(proj_name, opt_level, proj_list, opt_levels)
                             exit()
-                        except:
-                            handle_exception(proj_name, opt_level, proj_list, opt_levels, bin_name)
+                        #except:
+                        #    handle_exception(proj_name, opt_level, proj_list, opt_levels, bin_name)
         opt_levels = OPT_LEVELS
 
