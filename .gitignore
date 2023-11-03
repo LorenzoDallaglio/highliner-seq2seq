@@ -1,7 +1,4 @@
-projects/**
-binary_dataset/**
-snippet_dataset/**
-
+data/**
 *.txt
 *.json
 *.pickle
