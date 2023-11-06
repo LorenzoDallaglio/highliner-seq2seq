@@ -1,5 +1,6 @@
 # CHECKLIST
 
+# GROUND TRUTH EXTRACTION
 ## STEP 1: Compiling all projects
 - [V] Download the projects dataset 
 - [V] Choose folder/naming convention
@@ -9,7 +10,7 @@
 ## STEP 2: Extract inlined snippets
 - [V] Locate inlining in each binary (implement tool to)
 - [V] List methods names to extract
-- [V]  Filter inlining instances by method name
+- [V] Filter inlining instances by method name
 - [V] Extract basic blocks and addresses for each instance (implement tool to)
 - [V] Extract asm snippets for each instance (implement tool to)
 
@@ -17,20 +18,34 @@
 - [V] Choose folder/naming convention for snippets
 - [V] Create appropriate folders
 
-Questions:
-- Why are Dwarf ranges so weird?:
-	- entry\_pc does not correspond with low\_pc
-	- Some ranges start with one byte as starting address, other have simply multiple instances with no starting address
-	- Some ranges are only the starting address
-	- Some ranges include zero-byte intervals
-	- Some ranges are below entry block
-- Possible errors in the dataset:
-	- Output binary has weird extension such as .o -> isn't correctly extracted
-	- Optimization flags of projects are specified in neither OPT\_FLAGS or CXX\_FLAGS, but after both
+## REDESEING:
+- [V] Use directly angr instead of pwntools
+- [V] Add possibility to choose whether to save snippets to file or not
+- [] Add pickling directly to extraction procedure
+- [V] Remove the input-target division
+- [] Test new speed and possibly remove checkpointing of execution
+- [] Factor different modules: 1) DWARF parser, 2) Asm extractor 3) Storage
+
+#MODEL DESISIGN
+## POSSIBILE IMPROVEMENTS
+- [ ] Add class label as input to the model
+- [ ] Implement input class weights to alleviate bias
+- [ ] Identify more precisely inlined instructions
+- [ ] Implement arbitrary length sequence input into the recognizer instead of sliding window + padding
+- [ ] Filter out methods which are too small from the dataset
+- [ ] Try bidirectional LSTMs and GRUs
+
+# TOOL DESIGN
+- TBD after meeting with BINO author
 
 Report:
-- Implemented very rudimental unmangling of names
-	- Not clear if it is correct
-- Tested DWARF4 in place of DWARF5, which solved many DWARF related problems.
-	-> Pyelftools correctly parses DWARF5 nowadays, but produced data structures are slightly different from DWARF4.
-	-> Previously had to slightly adjust BINO's parser, now I'll just use it as is to guarantee correctness
+- Wrote appropriate preprocessing of data (target encoding, sequence splitting, padding). 
+	- Arbitrary length input is currently handled by a sliding window
+- Designed, trained and tested first model
+	- Have no benchmark, but results seem very good: 97% Precision, Recall
+	- Decided to stop for a moment (also because Colab took away my GPU)
+	- Maybe meeting to discuss results and possible improvements?
+
+
+NOTE: This file should be removed from history sooner or later.
+https://stackoverflow.com/questions/3458685/how-can-i-completely-remove-a-file-from-a-git-repository

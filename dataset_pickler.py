@@ -1,8 +1,7 @@
 from os import listdir
 from os.path import join
-from build_sort import recursive_ls
 from pickle import dump, load
-from modules.config import OPT_LEVELS, SNIPPETS_DIR, METHODS
+from modules.config import OPT_LEVELS, SNIPPETS_DIR, INLINE_TOKEN, METHODS
 from modules.tokenizer import tokenize
 
 class snippet:
@@ -16,14 +15,13 @@ def parse_files():
     snippet_list = []
     for project in listdir(SNIPPETS_DIR):
         for opt in OPT_LEVELS:
-            input_dir = join(SNIPPETS_DIR, project, opt, "input")
-            target_dir = join(SNIPPETS_DIR, project, opt, "target")
+            asm_dir = join(SNIPPETS_DIR, project, opt)
             try:
-                for snippet_name in listdir(input_dir):
-                    with open(join(input_dir, snippet_name), "r") as input_file:
-                        input_seq = tokenize(input_file.readlines())
-                    with open(join(target_dir, snippet_name), "r") as target_file:
-                        target_seq = tokenize(target_file.readlines())
+                for snippet_name in listdir(asm_dir):
+                    with open(join(asm_dir, snippet_name), "r") as seq_file:
+                        asm = seq_file.readlines()[4:] #Current file header
+                        target_seq = [(INLINE_TOKEN in inst) for inst in asm]
+                        input_seq = tokenize(asm, INLINE_TOKEN)
                     snippet_list.append(snippet(snippet_name, opt, input_seq, target_seq))
             except FileNotFoundError:
                 pass
