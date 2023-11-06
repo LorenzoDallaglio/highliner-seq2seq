@@ -5,64 +5,20 @@ import pdb
 import angr
 import os
 import traceback
-from modules.dwarf_parser import Dwarf
+from dwarf_parsing.inlineInstance import *
 from modules.persistence import save_state, load_state
-from modules.name_mangling import demangle
 from modules.tokenizer import tokenize
 from modules.config import BINARIES_DIR, SNIPPETS_DIR, OPT_LEVELS, INLINE_TOKEN, METHODS
-
-###############
-### CLASSES ###
-###############
 
 #Simulating argv
 RESUME_EXEC = False
 SAVE_FILES = True
 SAVE_PICKLE = True
 
-class inlinedInfo:
-    def __init__(self, demangled_name, ranges=[], blocks=[]):
-        self.demangled_name = demangled_name
-        self.ranges = ranges.copy()
-        self.blocks = blocks.copy()
-
-    def __repr__(self):
-        name_repr = "Name: {}".format(self.demangled_name)
-        ranges_repr = "Ranges: "
-        for ran in self.ranges:
-            ranges_repr += "{} -> {}, ".format(hex(ran[0]), hex(ran[1]))
-
-        block_repr = "Blocks: "
-        for block in self.blocks:
-            block_repr += "{} -> {}, ".format(hex(block.addr), hex(block.addr + block.size))
-
-        return "{}\n{}\n{}\n".format(name_repr, ranges_repr, block_repr)
-
-
 
 #################
 ### FUNCTIONS ###
 #################
-
-def get_inlined_instances(elf_path):
-    dobject = Dwarf(elf_path)
-    inlined_instances_list = []
-    for mangled_name, ranges in dobject.get_inlined_subroutines_info():
-        namespace, method = demangle(mangled_name)
-        demangled_name = namespace + "::" + method
-        if demangled_name in METHODS:
-            new_instance = inlinedInfo(demangled_name)
-            for elem in ranges:
-                if elem[1] == elem[0]:
-                    continue
-                new_instance.ranges.append([elem[0], elem[1]])
-            inlined_instances_list.append(new_instance) 
-        else:
-            pass
-    return inlined_instances_list
-
-
-
 def get_angr_function_list(cfg):
     angr_functions = []
     for angr_function in cfg.kb.functions.values():
@@ -159,7 +115,7 @@ def extract_asm_to_files(snippets_dir, elf_path, inlined_instances_list):
 def extract_snippets(elf_path, snip_dir):
     # 1) DWARF info is parsed into InlinedInfo objects
     print("Parsing DWARF to get instances:\n")
-    inlined_instances_list = get_inlined_instances(elf_path)
+    inlined_instances_list = get_inlined_instances(elf_path, METHODS)
 
     # 2) InlinedInfo ranges are used to identify blocks containing the inlined instance instructions
     print("Navigating CFG to identify relevant blocks:\n")

@@ -324,11 +324,3 @@ class Dwarf(object):
             file_dir = includes[file_info.dir_index - 1].decode("utf-8")
             file_path = join(file_dir, filename)
         return file_path, line
-
-
-if __name__=="__main__":
-    dobject = Dwarf("0test/test")
-    for mangled_name, ranges in dobject.get_inlined_subroutines_info():
-        print(mangled_name)
-        print(ranges)
-    #print(list(dobject.get_inlined_subroutines_mangled_name_by_addr(0x1A7CD))) 
