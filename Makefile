@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROJDIRS=$(wildcard projects/*/.)
+PROJDIRS=$(wildcard data/projects/*/.)
 
 .PHONY: compile $(PROJDIRS)
 
