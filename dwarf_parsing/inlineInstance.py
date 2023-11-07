@@ -2,10 +2,9 @@ from dwarf_parsing.bino.dwarf_parser import Dwarf
 from dwarf_parsing.bino.name_mangling import demangle
 
 class inlineInstance:
-    def __init__(self, demangled_name, ranges=[], blocks=[]):
+    def __init__(self, demangled_name, ranges=[]):
         self.demangled_name = demangled_name
         self.ranges = ranges.copy()
-        self.blocks = blocks.copy()
 
     def __repr__(self):
         name_repr = "Name: {}".format(self.demangled_name)

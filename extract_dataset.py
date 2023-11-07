@@ -7,9 +7,9 @@ import os
 import traceback
 from dwarf_parsing.inlineInstance import *
 from asm_extraction.blockNavigator import *
+from snippet_creation.Snippet import * 
 from modules.persistence import save_state, load_state
-from modules.tokenizer import tokenize
-from modules.config import BINARIES_DIR, SNIPPETS_DIR, OPT_LEVELS, INLINE_TOKEN, METHODS
+from modules.config import BINARIES_DIR, SNIPPETS_DIR, OPT_LEVELS, INLINE_MARK, METHODS
 
 #Simulating argv
 RESUME_EXEC = False
@@ -44,7 +44,7 @@ def compose_snippet(instance, address=False):
             code += "{} {}".format(inst.mnemonic, inst.op_str)
             for rang in instance.ranges:
                 if inst.address >= rang[0] and inst.address < rang[1]:
-                    code += INLINE_TOKEN
+                    code += INLINE_MARK
                     break
             code += "\n"
     return code
@@ -112,6 +112,7 @@ if __name__ =="__main__":
         proj_list = sorted(os.listdir(BINARIES_DIR))
         opt_levels = OPT_LEVELS
 
+    snippet_list = []
     for proj_name in proj_list:
         print("Parsing project: " + proj_name)
         proj_dir = BINARIES_DIR + proj_name
@@ -130,10 +131,32 @@ if __name__ =="__main__":
                         try:
                             elf_path = os.path.join(bin_dir, bin_name)
                             print("FOR BINARY AT: " + elf_path)
-                            extract_snippets(elf_path, snip_dir)
+
+                            # 1) DWARF info is parsed into InlinedInfo objects
+                            print("Parsing DWARF to get instances:\n")
+                            inlined_instances_list = get_inlined_instances(elf_path, METHODS)
+
+                            # 2) InlinedInfo ranges are used to identify blocks containing the inlined instance instructions
+                            print("Navigating CFG to identify relevant blocks:\n")
+                            navigator = blockNavigator(elf_path)
+                            for instance in inlined_instances_list:
+                                overlapping_blocks = navigator.find_overlapping_blocks(instance.ranges)
+                                print (instance, [[hex(block.addr), hex(block.addr + block.size)] for block in overlapping_blocks])
+                            # 3) Asm snippets of identified blocks and ranges are extracted to files
+                                snippet = Snippet(bin_name, opt_level, instance.demangled_name, addr=instance.ranges[0][0])
+                                snippet.load_code(instance.ranges, overlapping_blocks, INLINE_MARK)
+                                snippet.build_sequences(INLINE_MARK)
+                                if SAVE_FILES:
+                                    snippet.to_file(snip_dir)
+                                snippet_list.append(snippet)
                         except KeyboardInterrupt:
                             handle_exception(proj_name, opt_level, proj_list, opt_levels)
                             exit()
                         #except:
                         #    handle_exception(proj_name, opt_level, proj_list, opt_levels, bin_name)
 
+    if SAVE_PICKLE:
+        with open("data/pickled_data.pickle", "wb") as pickle_file:
+            dump(snippet_list, pickle_file)
+        
+        
