@@ -13,7 +13,7 @@ class inlineInstance:
         for ran in self.ranges:
             ranges_repr += "{} -> {}, ".format(hex(ran[0]), hex(ran[1]))
 
-        return "{}\n{}\n{}\n".format(name_repr, ranges_repr)
+        return "{}\n{}\n".format(name_repr, ranges_repr)
 
 
 

@@ -6,6 +6,7 @@ import angr
 import os
 import traceback
 from dwarf_parsing.inlineInstance import *
+from asm_extraction.blockNavigator import *
 from modules.persistence import save_state, load_state
 from modules.tokenizer import tokenize
 from modules.config import BINARIES_DIR, SNIPPETS_DIR, OPT_LEVELS, INLINE_TOKEN, METHODS
@@ -19,56 +20,6 @@ SAVE_PICKLE = True
 #################
 ### FUNCTIONS ###
 #################
-def get_angr_function_list(cfg):
-    angr_functions = []
-    for angr_function in cfg.kb.functions.values():
-        # If the function is a plt function we don't care
-        if angr_function.is_plt:
-            continue
-        # No blocks? Don't care  
-        if angr_function.size == 0:
-            continue
-        angr_functions.append(angr_function)
-    return sorted(angr_functions, key = lambda fun: fun.addr)
-
-
-#NOTE: suboptimal to iterate on the function once and then iterate again, but intuitive
-def find_context_function(instance_starting_addr, candidate_function_list):
-    for candidate in reversed(candidate_function_list):
-        for block in candidate.blocks:
-            block_start = block.addr
-            block_end = block_start + block.size
-            if (block_start <= instance_starting_addr and instance_starting_addr < block_end):
-                return candidate
-
-
-
-def find_blocks(elf_path, inlined_info_list):
-    angr_proj = angr.Project(elf_path, main_opts={'arch': "amd64"}, load_options={'auto_load_libs': False})
-    base_addr = angr_proj.loader.main_object.min_addr
-    cfg = angr_proj.analyses.CFGFast(normalize=True)
-    fun_manager = cfg.kb.functions
-    function_list = get_angr_function_list(cfg)
-
-    for instance in inlined_info_list:
-        for rang in instance.ranges: #Rebase Dwarf addresses
-            rang[0] += base_addr
-            rang[1] += base_addr
-
-        starting_addr = instance.ranges[0][0] #DWARF ranges are sorted in increasing order - tested
-        ceiling_fun = fun_manager.ceiling_func(starting_addr)
-        ceiling_index = function_list.index(ceiling_fun)
-        context_fun = find_context_function(starting_addr, function_list[:ceiling_index])
-            
-        block_list = sorted(context_fun.blocks, key = lambda block: block.addr)
-        for block in block_list:
-            for rang in instance.ranges:
-                block_start = block.addr
-                block_end = block_start + block.size
-                if (block_start < rang[1] and block_end > rang[0]):
-                    instance.blocks.append(block)
-                    break
-
 
 
 #Name used as ID is name of the binary + name of the method + covered range
@@ -119,8 +70,11 @@ def extract_snippets(elf_path, snip_dir):
 
     # 2) InlinedInfo ranges are used to identify blocks containing the inlined instance instructions
     print("Navigating CFG to identify relevant blocks:\n")
-    find_blocks(elf_path, inlined_instances_list)
-    print (inlined_instances_list)
+    navigator = blockNavigator(elf_path)
+    for instance in inlined_instances_list:
+        overlapping_blocks = navigator.find_overlapping_blocks(instance.ranges)
+        print (instance, [[hex(block.addr), hex(block.addr + block.size)] for block in overlapping_blocks])
+    return
 
     
     # 3) Asm snippets of identified blocks and ranges are extracted to files

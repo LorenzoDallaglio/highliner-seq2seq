@@ -38,13 +38,24 @@
 # TOOL DESIGN
 - TBD after meeting with BINO author
 
+
 Report:
 - Wrote appropriate preprocessing of data (target encoding, sequence splitting, padding). 
 	- Arbitrary length input is currently handled by a sliding window
 - Designed, trained and tested first model
-	- Have no benchmark, but results seem very good: 97% Precision, Recall
+	- Have no benchmark, but results seem very good: 97% Precision, Recall with sliding window 20
 	- Decided to stop for a moment (also because Colab took away my GPU)
 	- Maybe meeting to discuss results and possible improvements?
+- Started reworking the whole pipeline
+	- Started using angr codeblocks to get disassembly instead of pwntools:
+		- Fixes some bugs
+		- More precise identification of inlined instructions
+	- Solved bug which caused some methods not to be found: missed a comma, apparently
+	- Keep more information about each snippet, e.g. which inlined method, which opt
+- Next week: 
+	- Rerun data analysis
+	- Will implement more varied testing (e.g. by class, by optimization)
+	- Implement result interpretability
 
 
 NOTE: This file should be removed from history sooner or later.
