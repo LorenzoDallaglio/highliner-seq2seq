@@ -3,12 +3,13 @@ from os.path import join, basename
 import re
 
 class Snippet:
-    def __init__ (self, binary, opt, method, addr = 0, instructions = []):
+    def __init__ (self, binary, opt, method, addr = 0, blocksize = 0, instructions = []):
         self.binary = binary
         self.opt = opt
         self.method = method
         self.addr = addr
-        self.instructions = instructions
+        self.blocksize = blocksize
+        self.instructions = instructions[:]
         self.input_seq = []
         self.target_seq = []
 
@@ -31,15 +32,16 @@ class Snippet:
             instruction_list.append(clean_instruction)
         return instruction_list
 
-    def load_code(self, ranges, blocks, inline_mark):
-        inst_string = ''
+    def load_code(self, ranges, base_address, blocks, inline_mark):
+        self.blocksize = len(blocks)
         for block in blocks:
             for inst in block.disassembly.insns:
-                inst_string += "{}:".format(hex(inst.address))
+                inst_string = "{}: ".format(hex(inst.address))
                 inst_string += "{} {}".format(inst.mnemonic, inst.op_str)
                 #NOTE: could be rewritten with iterators
                 for rang in ranges:
-                    if inst.address >= rang[0] and inst.address < rang[1]:
+                    address = inst.address - base_address
+                    if address >= rang[0] and address < rang[1]:
                         inst_string += inline_mark
                         break
                 self.instructions.append(inst_string)
@@ -51,8 +53,9 @@ class Snippet:
     def to_file (self, snippets_dir):
         file_name = "{}###{}###{}###{}".format(self.binary, self.opt, self.method, hex(self.addr))
         with open(join(snippets_dir, file_name), 'w') as snippet_file:
+            header = "{} blocks:\n".format(self.blocksize)
             code = '\n'.join(self.instructions)
-            snippet_file.write(code)
+            snippet_file.write(header + code)
         return
 
 
@@ -61,8 +64,10 @@ class Snippet:
         file_name = basename(file_path)
         attributes = file_name.split('###')
         with open(join(snippets_dir, filename), 'r') as snippet_file:
-            code = snippet_file.readlines()
-        return snippet(attributes[0], attributes[1], attributes[2], attributes[3])
+            lines = snippet_file.readlines() 
+            blocksize = int(lines[0][0])
+            code =  lines[1:]
+        return snippet(attributes[0], attributes[1], attributes[2], addr = attributes[3], blocksize = blocksize, instructions = code)
 
 
 
