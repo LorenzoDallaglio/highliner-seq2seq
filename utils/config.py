@@ -3,7 +3,7 @@
 PROJECTS_DIR = 'data/projects/'
 BINARIES_DIR = 'data/binaries/'
 SNIPPETS_DIR = 'data/snippets/'
-OPT_LEVELS = ["-O2", "-O3", "-Os"]
+OPT_LEVELS = ["-O2", "-O3", "-Os", "-Ofast"]
 INLINE_MARK = " [INL]"
 METHODS = {
     "std::deque::operator[]",
