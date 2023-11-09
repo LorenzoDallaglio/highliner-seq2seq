@@ -14,10 +14,11 @@ SAVE_FILES = True
 SAVE_PICKLE = True
 
 def handle_exception(leftover_proj, leftover_opt, snippet_list, problem_binary=''):
-    print(proj_name + " - " + opt_level)
-    if problem_binary:
-        print("Problematic binary is " + problem_binary)
-    traceback.print_exc()
+    with open("logs/exec_trace.txt", 'a+') as trace_file:
+        trace_file.write(proj_name + " - " + opt_level + "\n")
+        if problem_binary:
+            trace_file.write("Problematic binary is " + problem_binary + "\n")
+        traceback.print_exc(file = trace_file)
     save_state(leftover_proj, leftover_opt, snippet_list)
 
 
@@ -30,8 +31,8 @@ if __name__ =="__main__":
     else:
         proj_list = sorted(os.listdir(BINARIES_DIR))
         opt_levels = OPT_LEVELS
+        snippet_list = []
 
-    snippet_list = []
     for proj_name in proj_list:
         print("Parsing project: " + proj_name)
         proj_dir = BINARIES_DIR + proj_name
