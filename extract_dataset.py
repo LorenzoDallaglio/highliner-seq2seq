@@ -1,6 +1,3 @@
-###############
-### IMPORTS ###
-###############
 import pdb
 import os
 import traceback
@@ -59,6 +56,7 @@ if __name__ =="__main__":
 
                     print("Navigating CFG to identify relevant blocks:\n")
                     navigator = blockNavigator(elf_path)
+                    navigator.make_function_list()
                     for instance in inlined_instances_list:
                         overlapping_blocks = navigator.find_overlapping_blocks(instance.ranges)
                         print (instance, [[hex(block.addr), hex(block.addr + block.size)] for block in overlapping_blocks])
@@ -79,14 +77,9 @@ if __name__ =="__main__":
                     leftover_proj = proj_list[proj_list.index(proj_name):]
                     leftover_opt = opt_levels[opt_levels.index(opt_level):]
                     handle_exception(leftover_proj, leftover_opt, snippet_list, problem_binary=bin_name)
-                break
-            break
 
         snippet_list += proj_snippets
-        break
 
     if SAVE_PICKLE:
         with open("data/pickled_data.pickle", "wb") as pickle_file:
             dump(snippet_list, pickle_file)
-    print("Over")
-        
