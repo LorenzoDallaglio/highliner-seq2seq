@@ -28,16 +28,29 @@
 
 #MODEL DESISIGN
 ## POSSIBILE IMPROVEMENTS
-- [ ] Add class label as input to the model
-	-> maybe also output?
-- [ ] Implement input class weights to alleviate bias
+- [V] Add class label as input to the model
+	-> Opted to avoid it to avoid bias when working on unseen methods
+- [V] Implement class weights to alleviate data bias
+	- Didn't improve performance
 - [V] Identify more precisely inlined instructions
-- [ ] Implement arbitrary length sequence input into the recognizer instead of sliding window + padding
-- [ ] Filter out methods which are too small from the dataset
-- [V] Try bidirectional LSTMs and GRUs
+- [V] Implement arbitrary length sequence input into the recognizer instead of sliding window + padding
+	-> Longer sequences perform better
+- [V] Try GRUs and mix with LSTM
+	-> Didn't improve performance
+- [V] Try bidirectional layers
+- [V] Try  early stopping on other metrics (Negative accuracy. negative recall)
+	-> Didn't improve performance
 
 # TOOL DESIGN
-- TBD after meeting with BINO author
+- Parse command line input, with two options:
+	- input from file or from hand?
+	- output in text form or on terminal
+- Get each inlined block with angr
+- Feed ALL the tokenized instructions of the block into Palmtree
+- Splice and manipulate sequence to feed into inliner, then recompose in order
+- Keeping all block  and instruction-relevant information from angr
+- For each instruction, print the probability of it being inlined and mark it someway if it is
+- Print them 
 
 
 NOTE: This file should be removed from history sooner or later.
