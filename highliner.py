@@ -1,9 +1,10 @@
 from json import load
 
-from angr_utils.block_utils import *
-from models.EncoderDecoder import *
+from angr_utils.block_utils import index_blocks, get_instructions
+from models.frontend import EncoderDecoder
+from output_format.format import format_match
 
-
+#Input options: base or don't, hex or num, print or not, store or not
 if __name__ == "__main__":
     ##Import bino's output
     results_path = 'test_out.json'
@@ -14,27 +15,29 @@ if __name__ == "__main__":
     binary_path = bino_output['binary_path']
     block_index = index_blocks(binary_path, rebase=True)
 
-    highliner = EncoderDecoder(window_size = 256)
+    ##Initialize model
+    highliner = EncoderDecoder(window_len = 256)
 
     for match in bino_output['matches']:
+        ##Extract instructions of each match using angr disassembler
         matched_blocks = match['blocks']
-        angr_blocks = [block_index[block['address']] for block in matched_blocks]
+        match_instructions = []
+        for block in matched_blocks:
+            angr_block = block_index[block['address']]
+            block_instr = get_instructions(angr_block)
+            block['instructions'] = block_instr
+            match_instructions += block_instr
+            
+        #Predict on instructions
+        inline_predictions = highliner.predict(match_instructions)
 
-        inst_seq = []
-        for block in angr_blocks:
-            print(disasm_as_seq(block))
-            inst_seq += disasm_as_seq(block)
-
-        #prob_seq = highliner.predict(inst_seq)
-
-       # #Can just add some keys to the existing dictionary!
-       # inlined_inst_map = {}
-       # for block in angr_blocks:
-       #     num_inst = len(block.disassembly.insns)
-       #     inlined_inst_map[block] = prob_seq[0:num_inst]
-       #     prob_seq = [num_inst]
-
-       # output[match] = inlined_inst_map
+        #Zip predicted inlining probability to each instruction
+        for block in matched_blocks:
+            num_inst = len(block['instructions'])
+            block_predictions = inline_predictions[:num_inst]
+            inline_predictions = inline_predictions[num_inst:]
+            block['instructions'] = list(zip(block['instructions'], block_predictions))
+        break
 
     #Formatter().format(binary_path, output)
     print('Done')

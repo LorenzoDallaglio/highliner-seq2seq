@@ -12,7 +12,7 @@ def index_blocks(binary_path, rebase=True):
         
     return block_index
 
-def disasm_as_seq(block):
+def get_instructions(block):
     seq = []
     for inst in block.disassembly.insns:
         inst_string = "{}: ".format(hex(inst.address))
