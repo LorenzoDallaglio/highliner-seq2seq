@@ -1,4 +1,4 @@
-from json import load
+from json import load, dump
 
 from angr_utils.block_utils import index_blocks, get_instructions
 from models.frontend import EncoderDecoder
@@ -13,8 +13,9 @@ if __name__ == "__main__":
 
     ##Open angr's project
     binary_path = bino_output['binary_path']
+    print('Binary: {}'.format(binary_path))
     block_index = index_blocks(binary_path, rebase=True)
-
+    
     ##Initialize model
     highliner = EncoderDecoder(window_len = 256)
 
@@ -37,11 +38,8 @@ if __name__ == "__main__":
             block_predictions = inline_predictions[:num_inst]
             inline_predictions = inline_predictions[num_inst:]
             block['instructions'] = list(zip(block['instructions'], block_predictions))
-        break
 
-    #Formatter().format(binary_path, output)
-    print('Done')
-        
+        print(format_match(match))
 
-
-
+    with open('highliner_output.json', 'w') as output:
+        dump(bino_output, output)
