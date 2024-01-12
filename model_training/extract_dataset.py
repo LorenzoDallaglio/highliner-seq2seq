@@ -1,9 +1,9 @@
 import pdb
 import os
 import traceback
-from dwarf_parsing.inlineInstance import *
-from asm_extraction.blockNavigator import *
-from snippet_creation.Snippet import * 
+from dwarf_parsing.inline_instance import inlineInstance, get_inlined_instances
+from asm_extraction.navigator import blockNavigator
+from snippet_creation.snippet import Snippet
 from utils.persistence import save_state, load_state
 from utils.config import BINARIES_DIR, SNIPPETS_DIR, OPT_LEVELS, INLINE_MARK, METHODS
 from pickle import dump, load
