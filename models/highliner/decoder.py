@@ -1,10 +1,10 @@
-import tensorflow as tf
+from tensorflow import keras
 import numpy as np
 
-#Decorator of the keras model to hide the input and output processing
+# Decorator of the keras model to hide input and output processing
 class Decoder:
     def __init__(self, model_path, window_len):
-        self.model = tf.keras.saving.load_model(model_path)
+        self.model = keras.saving.load_model(model_path)
         self.window_len = window_len
 
     def _segment_input(self, seq):

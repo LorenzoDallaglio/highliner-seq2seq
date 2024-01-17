@@ -15,7 +15,7 @@ def index_blocks(binary_path, rebase=True):
 def get_instructions(block):
     seq = []
     for inst in block.disassembly.insns:
-        inst_string = "{}: ".format(hex(inst.address))
+        inst_string = "{}:".format(hex(inst.address))
         inst_string += "{} {}".format(inst.mnemonic, inst.op_str)
         seq.append(inst_string)
     return seq
