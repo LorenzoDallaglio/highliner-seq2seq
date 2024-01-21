@@ -18,7 +18,15 @@ def parse_args():
                         help='path to a file to dump the results in as json. If not specified, output will be only printed to sdtout')
     parser.add_argument('-b', '--binary',
                         dest='binary_path',
-                        help='path to Bino input binary. Required only to override path specified by Bino outpu in case of different working directories. If not specified, will be retrieved by Bino output')
+                        help='path to Bino input binary. Required only to override path specified by Bino output in case of different working directories. If not specified, will be retrieved by Bino output')
+    parser.add_argument('-nogpu',
+                        action = 'store_false',
+                        dest='allow_gpu',
+                        help='disables GPU usage. If not specified, programm will prioritize GPU over CPU')
+    parser.add_argument('-t', '--threshold',
+                        dest='threshold',
+                        type=float,
+                        help='sets threshold between 0 and 1 to set apart positive and negative class from model output. If not specified or invalid, optimal threshold will be used')
     parser.add_argument(dest='input_file',
                         help='output file of Bino to extend')
 
@@ -29,6 +37,8 @@ if __name__ == "__main__":
     args = parse_args()
     output_file = args.output_file
     binary_path = args.binary_path
+    allow_gpu = args.allow_gpu
+    threshold = args.threshold
     input_file = args.input_file
 
     # Import bino's output as input
@@ -43,7 +53,7 @@ if __name__ == "__main__":
     block_index = index_blocks(binary_path, rebase=True)
     
     # Initialize model
-    device = device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() and allow_gpu else "cpu")
     print("Prediction performed on {}\n".format(device))
     highliner = EncoderDecoder(device)
 
@@ -71,7 +81,9 @@ if __name__ == "__main__":
             inline_predictions = inline_predictions[num_inst:]
             block['instructions'] = list(zip(block['instructions'], block_predictions))
 
-        print(format_match(match))
+        if not threshold or threshold < 0 or threshold > 1:
+            threshold = 0.67
+        print(format_match(match, threshold))
 
     if output_file:
         with open(output_file, 'w') as output:
