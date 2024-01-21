@@ -1,9 +1,13 @@
 #!/usr/bin/python3
 
 import argparse
+import torch
 from json import load, dump
-from angr_utils.block_utils import index_blocks, get_instructions
-from models.frontend import EncoderDecoder
+from angr_utils.blocks import index_blocks, get_instructions
+from angr_utils.parsing import parse_instruction_list
+from models.encoder_decoder import EncoderDecoder
+#BUG: necessary import here
+from models.highliner.decoder import BiLSTMPredictor
 from output_format.format import format_match
 
 
@@ -39,14 +43,17 @@ if __name__ == "__main__":
     block_index = index_blocks(binary_path, rebase=True)
     
     # Initialize model
-    highliner = EncoderDecoder(window_len = 256)
+    device = device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print("Prediction performed on {}\n".format(device))
+    highliner = EncoderDecoder(device)
 
     # Iterate on inlined instances matched by Bino
-    for match in bino_output['matches'][:10]:
+    for match in bino_output['matches']:
         matched_blocks = match['blocks']
         match_instructions = []
 
         # Extract instructions of each matched block using angr disassembler
+        # Input should be a list of strings
         for block in matched_blocks:
             angr_block = block_index[block['address']]
             block_instr = get_instructions(angr_block)
@@ -54,6 +61,7 @@ if __name__ == "__main__":
             match_instructions += block_instr
             
         # Predict on instructions
+        parsed_instructions = parse_instruction_list(match_instructions)
         inline_predictions = highliner.predict(match_instructions)
 
         # Zip predicted inlining probability to each instruction

@@ -1,34 +1,23 @@
-from tensorflow import keras
-import numpy as np
+import torch
 
-# Decorator of the keras model to hide input and output processing
-class Decoder:
-    def __init__(self, model_path, window_len):
-        self.model = keras.saving.load_model(model_path)
-        self.window_len = window_len
+class BiLSTMPredictor(torch.nn.Module):
+  def __init__(self, input_size, hidden_size, num_layers, dense_size, bi=False, dropout=0):
+    super(BiLSTMPredictor, self).__init__()
 
-    def _segment_input(self, seq):
-        if (len(seq) % self.window_len > 0):
-          num_windows = (len(seq)//self.window_len)+1
-          ceiling = num_windows * self.window_len
-          seq = np.pad(seq, ((0, ceiling-len(seq)), (0,0)))
-        else:
-          num_windows = len(seq)//self.window_len
-        segments = np.split(seq, num_windows)
-        return np.stack(segments)
+    self.lstm = torch.nn.LSTM(input_size, hidden_size, num_layers=num_layers, batch_first = True, bidirectional=bi, dropout=dropout)
+    self.dense = torch.nn.Linear(2*hidden_size, dense_size)
+    self.dense_activation = torch.nn.LeakyReLU()
+    self.dense_dropout = torch.nn.Dropout(p=dropout)
+    self.linear = torch.nn.Linear(dense_size, 1)
+    self.sigmoid = torch.nn.Sigmoid()
 
-    def _predict_segments(self, segmented_seq):
-        segmented_preds = self.model.predict(segmented_seq)
-        return segmented_preds
+  def forward(self, x):
+    x, state = self.lstm(x)
+    x = self.dense(x)
+    x = self.dense_activation(x)
+    x = self.dense_dropout(x)
+    x = self.linear(x)
+    x = self.sigmoid(x)
+    x = torch.flatten(x, start_dim=1)
+    return x 
 
-    def _join_back_segments(self, segmented_seq, seq_len):
-        padded_pred = np.concatenate(segmented_seq)
-        seq_pred = np.resize(padded_pred, seq_len)
-        return seq_pred
-        
-    def decode(self, encoded_seq):
-        seq_len = len(encoded_seq)
-        segmented_seq = self._segment_input(encoded_seq)
-        segmented_pred = self._predict_segments(segmented_seq)
-        output_pred = self._join_back_segments(segmented_pred, seq_len)
-        return output_pred
