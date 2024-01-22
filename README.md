@@ -4,10 +4,6 @@
 To install required libraries:
 `pip install -r requirements`
 
-_TODO: required libraries are currently extremely clunky._
-_Program startup is slow due to tensorflow initialization._
-_The model will be reimplemented in pytorch soon to improve code quality_
-
 
 ## Inline instruction identification
 `usage: highliner.py [-h] [-o OUTPUT_FILE] [-b BINARY_PATH] [-nogpu] [-t THRESHOLD] input_file`
@@ -24,6 +20,14 @@ Same binary test sample as BINO available in data/test_binaries/generic_binaries
 
 Output file will be the same input dictionary with matches extended to include instructions and predicted probability of them being inline
 
+
 ## Dataset
 Dataset the model was trained on is the same as BINO.
 Can be downloaded at: https://mega.nz/file/eW5yhIJI#vsIjOz7_MNegW728R4KtN_KuZT2uJ18vWHo0_qTE0CI
+
+
+## Computation time
+Running highliner on BINO test binary (~17000 matched sequences) yields the following results:
+* On GPU: 357s or 5m 57s, ~21 ms per match
+* On CPU: 2730s or 45m 30s, ~160 ms per match
+Execution on GPU is ~7.5 times faster than on CPU

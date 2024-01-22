@@ -24,7 +24,7 @@ class EncoderDecoder:
         self.encoder.to(self.device)
         encoded = self.encoder.forward(sequence, segment_label)
         embedding = torch.mean(encoded.detach(), dim=1)
-        del encoded
+        del sequence, segment_label, encoded
 
         if numpy:
             return embedding.data.cpu().numpy
@@ -38,6 +38,7 @@ class EncoderDecoder:
         sliced_input = [embedding[i: i + window_len] for i in range(0, len(embedding), window_len)]
         sliced_pred = [self.decoder.forward(seq) for seq in sliced_input]
         prediction = torch.cat(sliced_pred)
+
         return prediction
 
 
@@ -45,4 +46,9 @@ class EncoderDecoder:
         embedding = self.encode(text)
         output = self.decode(embedding, WINDOW_LEN)
         prediction = torch.flatten(output)
+
+        #Note: it is of particular importance for GPU computations to clear intermediate results
+        #Not doing so results in drastic decrease of performance
+        del embedding, output
+
         return prediction.tolist()
