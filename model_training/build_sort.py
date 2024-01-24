@@ -1,6 +1,6 @@
 import os
 import subprocess
-from modules.config import PROJECTS_DIR, BINARIES_DIR, OPT_LEVELS
+from utils.config import PROJECTS_DIR, BINARIES_DIR, OPT_LEVELS
 
 CXXFLAGS = "-std=c++14 -lm -lpthread -gdwarf-4 -gstrict-dwarf "
 
