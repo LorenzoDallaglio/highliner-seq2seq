@@ -66,6 +66,6 @@ if __name__ =="__main__":
 
             if proj_data['matches']:
                 output.append(proj_data)
-                with open("output.json", 'w') as output_file:
+                with open("data/output.json", 'w') as output_file:
                     dump(output, output_file, indent=2)
 
