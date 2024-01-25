@@ -1,7 +1,28 @@
 import angr 
 
-# Basic, borderline redundant decorator of angr
+def get_instructions(block, show_addr=False):
+    instructions = []
+    #note: check instructions
+    for inst in block.disassembly.insns:
+        inst_string = "{:x}\t".format(inst.address) if show_addr else ''
+        inst_string += "{} {}".format(inst.mnemonic, inst.op_str)
+        instructions.append(inst_string)
+    return instructions
 
+
+def compute_inlined_flags(block, ranges, base_addr):
+    inline_flags = []
+    for address in block.instruction_addrs:
+        inlined=False
+        address -= base_addr
+        for rang in ranges:
+            if address >= rang[0] and address < rang[1]:
+                inlined=True    
+                break
+        inline_flags.append(inlined)
+    return inline_flags
+
+# Basic, borderline redundant decorator of angr
 class blockNavigator:
     def __init__(self, elf_path):
         self.proj = angr.Project(elf_path, main_opts={'arch': "amd64"}, load_options={'auto_load_libs': False})

@@ -1,20 +1,6 @@
 from dwarf_parsing.bino.dwarf_parser import Dwarf
 from dwarf_parsing.bino.name_mangling import demangle
 
-class inlineInstance:
-    def __init__(self, demangled_name, ranges=[]):
-        self.demangled_name = demangled_name
-        self.ranges = ranges.copy()
-
-    def __repr__(self):
-        name_repr = "Name: {}".format(self.demangled_name)
-        ranges_repr = "Ranges: "
-        for ran in self.ranges:
-            ranges_repr += "{} -> {}, ".format(hex(ran[0]), hex(ran[1]))
-
-        return "{}\n{}\n".format(name_repr, ranges_repr)
-
-
 def get_inlined_instances(elf_path, methods_of_interest):
     dobject = Dwarf(elf_path)
     inlined_instances_list = []

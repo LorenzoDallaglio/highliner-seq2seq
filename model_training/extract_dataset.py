@@ -1,16 +1,13 @@
-import pdb
 import os
 import traceback
-from dwarf_parsing.inline_instance import inlineInstance, get_inlined_instances
-from asm_extraction.navigator import blockNavigator
-from snippet_creation.snippet import Snippet
-from snippet_creation.block_utils import get_instructions, compute_inlined_flags
-from utils.persistence import save_state, load_state
-from utils.config import BINARIES_DIR, SNIPPETS_DIR, OPT_LEVELS, INLINE_MARK, METHODS
+from tqdm import tqdm
+from dwarf_parsing.inline_instance import get_inlined_instances
+from angr_utils.block_utils import blockNavigator, get_instructions, compute_inlined_flags
+from config.vars import BINARIES_DIR, SNIPPETS_DIR, OPT_LEVELS, METHODS
 from json import dump, load
 
 
-def handle_exception(leftover_proj, leftover_opt, snippet_list, problem_binary=''):
+def handle_exception(problem_project, problem_binary):
     with open("logs/exec_trace.txt", 'a+') as trace_file:
         trace_file.write(proj_name + " - " + opt_level + "\n")
         if problem_binary:
@@ -23,27 +20,25 @@ if __name__ =="__main__":
     opt_levels = OPT_LEVELS
     output = []
 
-    for proj_index, proj_name in enumerate(proj_list):
-        print("Parsing project: " + proj_name)
+    for proj_name in tqdm(proj_list, desc='Progress over projects', colour='GREEN'):
+        print("Parsing project {}\n".format(proj_name))
         proj_dir = BINARIES_DIR + proj_name
 
-        for opt_index, opt_level in enumerate(opt_levels):
-            print("With optimization: " + opt_level)
+        for opt_level in OPT_LEVELS:
             bin_dir = os.path.join(proj_dir, opt_level)
 
             for bin_name in os.listdir(bin_dir):
+                print("Extracting from binary {}{}".format(bin_name, opt_level))
+
                 proj_data = {'binary': bin_name,
                         'optimization': opt_level,
                         'matches': []}
 
                 elf_path = os.path.join(bin_dir, bin_name)
-                print("FOR BINARY AT: " + elf_path)
 
                 try:
-                    print("Parsing DWARF to get instances:\n")
                     inlined_instances_list = get_inlined_instances(elf_path, METHODS)
 
-                    print("Navigating CFG to identify relevant blocks:\n")
                     navigator = blockNavigator(elf_path)
                     navigator.make_function_list()
                     base_addr = navigator.base_addr
@@ -51,7 +46,6 @@ if __name__ =="__main__":
                     for instance in inlined_instances_list:
                         ranges = instance['ranges']
                         matching_blocks = navigator.find_overlapping_blocks(ranges)
-                        print (instance, [[hex(block.addr), hex(block.addr + block.size)] for block in matching_blocks])
 
                         match = {'method': instance['method'],
                                 'blocks' : []}
@@ -65,13 +59,13 @@ if __name__ =="__main__":
                         proj_data['matches'].append(match) 
 
                 except KeyboardInterrupt:
-                    handle_exception(proj_list[proj_index:], opt_levels[opt_index:], output, problem_binary=bin_name)
+                    handle_exception(proj_name, bin_name)
                     exit()
-                #except:
-                #    handle_exception(proj_list[proj_index:], opt_levels[opt_index:], output, problem_binary=bin_name)
+                except:
+                    handle_exception(proj_name, bin_name)
 
-            if 'matches' in proj_data.keys():
+            if proj_data['matches']:
                 output.append(proj_data)
+                with open("output.json", 'w') as output_file:
+                    dump(output, output_file, indent=2)
 
-    with open("output.json", 'w') as output_file:
-        dump(output, output_file, indent=2)

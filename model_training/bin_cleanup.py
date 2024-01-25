@@ -1,5 +1,5 @@
 import os
-from utils.config import BINARIES_DIR
+from config.vars import BINARIES_DIR
 
 if __name__ == "__main__":
     count = 0

@@ -1,6 +1,7 @@
 import os
 import subprocess
-from utils.config import PROJECTS_DIR, BINARIES_DIR, OPT_LEVELS
+from tqdm import tqdm
+from config.vars import PROJECTS_DIR, BINARIES_DIR, OPT_LEVELS
 
 CXXFLAGS = "-std=c++14 -lm -lpthread -gdwarf-4 -gstrict-dwarf "
 
@@ -39,7 +40,7 @@ if __name__ == '__main__':
         if not os.path.exists(BINARIES_DIR): 
             os.mkdir(BINARIES_DIR)
 
-        for proj_dir in os.listdir(PROJECTS_DIR):
+        for proj_dir in tqdm(os.listdir(PROJECTS_DIR), desc: "Progress over projects", colour='GREEN'):
             proj_path = os.path.join(PROJECTS_DIR, proj_dir)
             proj_file_paths = recursive_ls(proj_path)
 
