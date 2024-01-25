@@ -1,9 +1,9 @@
-model_training/data/**
+**/data/**
 *.txt
 *.json
 *.pickle
 
-model_training/modules/__pycache__/**
+**/__pycache__/**
 __*
 
 .* 
