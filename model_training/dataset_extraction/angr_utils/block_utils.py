@@ -22,6 +22,7 @@ def compute_inlined_flags(block, ranges, base_addr):
         inline_flags.append(inlined)
     return inline_flags
 
+
 # Basic, borderline redundant decorator of angr
 class blockNavigator:
     def __init__(self, elf_path):
@@ -30,6 +31,61 @@ class blockNavigator:
         cfg = self.proj.analyses.CFGFast(normalize=True)
         self.function_manager = cfg.kb.functions
         self.function_list = []
+
+
+    # Necessary due to the improper usage of networkX library from angr
+    def _get_cfg_nodes(self, cfg, blocks):
+        block_addresses = {block.addr: block for block in blocks}
+        node_index = {block: None for block in blocks}
+
+        for node in list(cfg.nodes):
+            if node.addr in block_addresses.keys():
+                block = block_addresses[node.addr]
+                node_index[block] = node
+
+        return node_index
+
+
+
+    def _compute_node_type(self, cfg, blocks):
+        if len(blocks) > 1:
+            node_index = self._get_cfg_nodes(cfg, blocks)
+            relations = []
+
+            # Consider all other nodes' predecessors and successors
+            preds, succs = set(), set()
+            for node in node_index.values():
+                node_preds = set(cfg.predecessors(node))
+                node_succs = set(cfg.successors(node))
+                preds = preds.union(node_preds)
+                succs = succs.union(node_succs)
+
+            for node in node_index.values():
+                node_preds = set(cfg.predecessors(node))
+                node_succs = set(cfg.successors(node))
+                other_preds = preds.difference(node_preds)
+                other_succs = succs.difference(node_succs)
+                # Initial nodes aren't successors of any other node
+                if node not in other_succs:
+                    # Isolated nodes aren't relevant: mark them as individual
+                    if node not in other_preds:
+                        node_type = 'Individual'
+                    else:
+                        node_type = 'Initial'
+                # Final nodes aren't precessor of any other node
+                elif node not in other_preds:
+                    node_type = 'Final'
+                # All others are intermediate
+                else:
+                    node_type = 'Intermediate'
+
+                relations.append(node_type)
+
+            return relations
+
+        # Single nodes are individuals
+        elif len(blocks) > 0:
+            return ['Individual']
 
 
     def make_function_list(self):
@@ -64,8 +120,13 @@ class blockNavigator:
 
 
     def find_overlapping_blocks(self, ranges):
-        starting_addr = ranges[0][0] #DWARF ranges are sorted in increasing order - tested
+        #DWARF ranges are sorted in increasing order - tested
+        starting_addr = ranges[0][0]
         context_fun = self.find_context_function(starting_addr + self.base_addr)
+        # Sometimes inlined blocks belong to no function: return no overlapping blocks
+        if not context_fun:
+            return []
+
         block_list = sorted(context_fun.blocks, key = lambda block: block.addr)
         overlapping_blocks = []
         #NOTE: knowing both blocks and ranges are sorted, a more optimal approach whould iterate on each once
@@ -76,5 +137,7 @@ class blockNavigator:
                 if (block_start < rang[1] and block_end > rang[0]):
                     overlapping_blocks.append(block)
                     break
-        return overlapping_blocks
+
+        node_types = self._compute_node_type(context_fun.transition_graph, overlapping_blocks)
+        return list(zip(overlapping_blocks, node_types))
 

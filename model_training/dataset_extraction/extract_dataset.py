@@ -50,13 +50,16 @@ if __name__ =="__main__":
                         match = {'method': instance['method'],
                                 'blocks' : []}
 
-                        for block in matching_blocks:
-                            block_data = {'address': block.addr - base_addr}
-                            block_data['instructions'] = get_instructions(block)
-                            block_data['inline_flags'] = compute_inlined_flags(block, ranges, base_addr)
+                        for block, node_type in matching_blocks:
+                            block_data = {'address': block.addr - base_addr,
+                                   'node_type': node_type,
+                                   'instructions': get_instructions(block),
+                                   'inline_flags': compute_inlined_flags(block, ranges, base_addr)
+                                    }
                             match['blocks'].append(block_data)
 
-                        proj_data['matches'].append(match) 
+                        if match['blocks']:
+                            proj_data['matches'].append(match)
 
                 except KeyboardInterrupt:
                     handle_exception(proj_name, bin_name)
@@ -64,8 +67,8 @@ if __name__ =="__main__":
                 except:
                     handle_exception(proj_name, bin_name)
 
-            if proj_data['matches']:
-                output.append(proj_data)
-                with open("data/output.json", 'w') as output_file:
-                    dump(output, output_file, indent=2)
+                if proj_data['matches']:
+                    output.append(proj_data)
+                    with open("data/output.json", 'w') as output_file:
+                        dump(output, output_file, indent=2)
 
