@@ -1,4 +1,5 @@
-**/data/**
+model_training/data/**
+data/
 *.txt
 *.json
 *.pickle
