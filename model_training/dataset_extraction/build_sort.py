@@ -40,7 +40,7 @@ if __name__ == '__main__':
         if not os.path.exists(BINARIES_DIR): 
             os.mkdir(BINARIES_DIR)
 
-        for proj_dir in tqdm(os.listdir(PROJECTS_DIR), desc: "Progress over projects", colour='GREEN'):
+        for proj_dir in tqdm(os.listdir(PROJECTS_DIR), desc= "Progress over projects", colour='GREEN'):
             proj_path = os.path.join(PROJECTS_DIR, proj_dir)
             proj_file_paths = recursive_ls(proj_path)
 

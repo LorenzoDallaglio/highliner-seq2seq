@@ -18,3 +18,5 @@ METHODS = {
     "std::vector::reserve",
     "std::vector::resize"
 }
+TEST_PERC = 0.2
+VAL_PERC = 0.2
