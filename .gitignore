@@ -1,10 +1,10 @@
 model_training/data/**
+model_training/models/saved_models/*
 data/
 *.txt
 *.json
 *.pickle
 model_training/snippet_creation
-sanity_test.py
 
 **/__pycache__/**
 __*
