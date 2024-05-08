@@ -4,6 +4,7 @@ data/
 *.txt
 *.json
 *.pickle
+*.ipynb
 model_training/snippet_creation
 
 **/__pycache__/**
