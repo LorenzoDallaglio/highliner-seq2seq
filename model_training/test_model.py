@@ -44,7 +44,7 @@ def run_full_testing(model_name):
     asm_vocab, palmtree = load_encoder(device)
     model = torch.load("models/saved_models/{}.pt".format(model_name))
     model.eval()
-    test_seqs = static_predict(test_seqs[:256], palmtree, asm_vocab, model)
+    test_seqs = static_predict(test_seqs, palmtree, asm_vocab, model)
     
     report_dir = "testing/reports/" + model_name
     if not os.path.exists(report_dir):
