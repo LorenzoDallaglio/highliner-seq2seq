@@ -34,7 +34,6 @@ def tokenize(sequence, vocab):
     return token_seq, segment_label
 
 
-
 # Use the encoder as-is, for pretraining without fine tuning
 def static_embed(seqs, encoder, vocab):
     embedded_seqs, target_seqs = [], []
