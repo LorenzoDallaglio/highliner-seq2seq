@@ -1,5 +1,6 @@
 model_training/data/**
 model_training/models/saved_models/*
+model_training/testing/reports/*
 data/
 *.txt
 *.json
