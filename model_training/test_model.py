@@ -17,13 +17,13 @@ from testing.cross_report import method_opt_cross_report
 from testing.length import length_report
 
 
-def static_predict (seqs, encoder, vocab, model):
+def static_predict (seqs, encoder, vocab, model, device):
     res = [] 
     for seq in tqdm(seqs):
         with torch.no_grad():
             token_seq, segment_label = tokenize(get_instructions(seq), vocab)
-            word_embedding = prediction = encoder.forward(token_seq, segment_label)
-            embedding = torch.mean(word_embedding.detach(), dim=1)
+            word_embedding = encoder.forward(token_seq, segment_label)
+            embedding = torch.mean(word_embedding.detach(), dim=1).to_device(device)
             target = torch.LongTensor([1 if flag else 0 for flag in get_inline_flags(seq)])
 
             pred = model(embedding)

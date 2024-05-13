@@ -21,7 +21,7 @@ def load_encoder(device):
     vocab = WordVocab.load_vocab("./palmtree/vocab")
     encoder = torch.load("./palmtree/transformer.ep19")
     encoder.eval()
-    encoder.to(device)
+    encoder = encoder.to(device)
     return vocab, encoder
 
 
@@ -35,12 +35,14 @@ def tokenize(sequence, vocab):
 
 
 # Use the encoder as-is, for pretraining without fine tuning
-def static_embed(seqs, encoder, vocab):
+def static_embed(seqs, encoder, vocab, device):
     embedded_seqs, target_seqs = [], []
     for seq in tqdm(seqs):
         with torch.no_grad():
             token_seq, segment_label = tokenize(get_instructions(seq), vocab)
-            word_embedding = prediction = encoder.forward(token_seq, segment_label)
+            token_seq = token_seq.to('device')
+            segment_label = segment_label.to('device') 
+            word_embedding = encoder.forward(token_seq, segment_label)
             embedding = torch.mean(word_embedding.detach(), dim=1)
             target = torch.LongTensor([1 if flag else 0 for flag in get_inline_flags(seq)]).to(device)
 
@@ -106,8 +108,8 @@ if __name__ == "__main__":
     with open(DATA_PATH + "val.json", "rb") as val_file:
       val_seqs = load(val_file)
 
-    input_train, target_train = static_embed(train_seqs, palmtree, asm_vocab)
-    input_val, target_val = static_embed(val_seqs, palmtree, asm_vocab)
+    input_train, target_train = static_embed(train_seqs, palmtree, asm_vocab, device)
+    input_val, target_val = static_embed(val_seqs, palmtree, asm_vocab, device)
 
     batch_size = 256
     train_data = VariableLengthDataset(input_train, target_train)
@@ -118,12 +120,12 @@ if __name__ == "__main__":
     print('Training set has {} instances'.format(len(train_loader)))
     print('Validation set has {} instances'.format(len(val_loader)))
 
-    model = LSTMDecoder(INPUT_SIZE, HIDDEN_SIZE, NUM_LAYERS, DENSE_SIZE, True, DROPOUT)
+    model = LSTMDecoder(INPUT_SIZE, HIDDEN_SIZE, NUM_LAYERS, DENSE_SIZE, True, DROPOUT).to(device)
     loss_fn = batched_loss
     optimizer = torch.optim.Adam(model.parameters(), lr=LR)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=LR_FACTOR, patience=PATIENCE, cooldown=COOLDOWN, verbose=True)
 
     model_name = "test_model"
-    train(model, model_name, train_loader, val_loader, loss_fn, optimizer, 5, device)
+    train(model, model_name, train_loader, val_loader, loss_fn, optimizer, EPOCH, device)
     model = torch.load("models/saved_models/{}.pt".format(model_name))
     model.eval()
