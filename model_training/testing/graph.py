@@ -2,9 +2,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
-def plot_roc(fpr, tpr, opt_index, report_dir=None, save=True):
+def plot_roc(fpr, tpr, opt_index, auc, report_dir=None, save=True):
     plt.plot([0,1], [0,1], linestyle='--', label='No Skill')
-    plt.plot(fpr, tpr, label='Model')
+    plt.plot(fpr, tpr, label='Model - AUC {:.4f}'.format(auc))
     plt.scatter(fpr[opt_index], tpr[opt_index], marker='o', color='black', label='Best')
     # axis labels
     plt.xlabel('False Positive Rate')
@@ -12,7 +12,7 @@ def plot_roc(fpr, tpr, opt_index, report_dir=None, save=True):
     plt.legend()
     # show the plot
     if save:
-        plt.savefig(report_dir+"/roc.pdf")
+        plt.savefig(report_dir + "/roc.pdf")
     #plt.show()
     return
 
