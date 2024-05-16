@@ -3,13 +3,14 @@ import seaborn as sns
 import numpy as np
 
 def plot_roc(fpr, tpr, opt_index, auc, report_dir=None, save=True):
-    plt.plot([0,1], [0,1], linestyle='--', label='No Skill')
-    plt.plot(fpr, tpr, label='Model - AUC {:.4f}'.format(auc))
-    plt.scatter(fpr[opt_index], tpr[opt_index], marker='o', color='black', label='Best')
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot([0,1], [0,1], linestyle='--', label='No Skill')
+    ax.plot(fpr, tpr, label='Model - AUC {:.4f}'.format(auc))
+    ax.scatter(fpr[opt_index], tpr[opt_index], marker='o', color='black', label='Best')
     # axis labels
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.legend()
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate')
+    ax.legend()
     # show the plot
     if save:
         plt.savefig(report_dir + "/roc.pdf")
