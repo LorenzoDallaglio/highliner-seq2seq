@@ -40,8 +40,8 @@ def static_embed(seqs, encoder, vocab, device):
     for seq in tqdm(seqs):
         with torch.no_grad():
             token_seq, segment_label = tokenize(get_instructions(seq), vocab)
-            token_seq = token_seq.to('device')
-            segment_label = segment_label.to('device') 
+            token_seq = token_seq.to(device)
+            segment_label = segment_label.to(device) 
             word_embedding = encoder.forward(token_seq, segment_label)
             embedding = torch.mean(word_embedding.detach(), dim=1)
             target = torch.LongTensor([1 if flag else 0 for flag in get_inline_flags(seq)]).to(device)
@@ -52,7 +52,7 @@ def static_embed(seqs, encoder, vocab, device):
     return embedded_seqs, target_seqs
 
 
-def train(model, model_name, train_loader, val_loader, loss_fn, optimizer, epochs, device):
+def train(model, model_name, train_loader, val_loader, loss_fn, optimizer, scheduler, epochs, device):
     train_history, val_history = [], []
     count = 0
     best_loss = 1000
@@ -108,8 +108,8 @@ if __name__ == "__main__":
     with open(DATA_PATH + "val.json", "rb") as val_file:
       val_seqs = load(val_file)
 
-    input_train, target_train = static_embed(train_seqs, palmtree, asm_vocab, device)
-    input_val, target_val = static_embed(val_seqs, palmtree, asm_vocab, device)
+    input_train, target_train = static_embed(train_seqs[:100], palmtree, asm_vocab, device)
+    input_val, target_val = static_embed(val_seqs[:100], palmtree, asm_vocab, device)
 
     batch_size = 256
     train_data = VariableLengthDataset(input_train, target_train)
@@ -126,6 +126,6 @@ if __name__ == "__main__":
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=LR_FACTOR, patience=PATIENCE, cooldown=COOLDOWN, verbose=True)
 
     model_name = "test_model"
-    train(model, model_name, train_loader, val_loader, loss_fn, optimizer, EPOCH, device)
+    train(model, model_name, train_loader, val_loader, loss_fn, optimizer, scheduler, EPOCH, device)
     model = torch.load("models/saved_models/{}.pt".format(model_name))
     model.eval()

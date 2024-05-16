@@ -23,7 +23,7 @@ def static_predict (seqs, encoder, vocab, model, device):
         with torch.no_grad():
             token_seq, segment_label = tokenize(get_instructions(seq), vocab)
             word_embedding = encoder.forward(token_seq, segment_label)
-            embedding = torch.mean(word_embedding.detach(), dim=1).to_device(device)
+            embedding = torch.mean(word_embedding.detach(), dim=1).to(device)
             target = torch.LongTensor([1 if flag else 0 for flag in get_inline_flags(seq)])
 
             pred = model(embedding)
@@ -44,7 +44,7 @@ def run_full_testing(model_name):
     asm_vocab, palmtree = load_encoder(device)
     model = torch.load("models/saved_models/{}.pt".format(model_name))
     model.eval()
-    test_seqs = static_predict(test_seqs, palmtree, asm_vocab, model)
+    test_seqs = static_predict(test_seqs[:100], palmtree, asm_vocab, model, device)
     
     report_dir = "testing/reports/" + model_name
     if not os.path.exists(report_dir):
@@ -53,6 +53,7 @@ def run_full_testing(model_name):
     make_confusion_matrix(test_seqs, threshold, report_dir)
     method_opt_cross_report(test_seqs, threshold, report_dir)
     length_report(test_seqs, 60, threshold, report_dir)
+    threshold = estimate_threshold(test_seqs, report_dir)
      
 
 if __name__ == '__main__':
